@@ -81,7 +81,7 @@ def delete_users(engine):
 
 def main():
     engine = run_engine()
-    # create_users(engine)
+    create_users(engine)
     # select_users(engine)
     update_users(engine)
     # delete_users(engine)

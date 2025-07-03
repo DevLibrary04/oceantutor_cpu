@@ -17,7 +17,7 @@ from sqlalchemy.sql import func
 
 
 class GichulSetType(str, enum.Enum):
-    giguansa = "기관사"
+    gigwansa = "기관사"
     hanghaesa = "항해사"
     sohyeong = "소형선박조종사"
 
@@ -40,7 +40,7 @@ class GichulSetInning(str, enum.Enum):
 
 class GichulSubject(str, enum.Enum):
     hanghae = "항해"
-    unyoung = "운용"
+    unyong = "운용"
     beopgyu = "법규"
     english = "영어"
     sangseon = "상선전문"
@@ -52,7 +52,7 @@ class GichulSubject(str, enum.Enum):
     jikmu = "직무일반"
 
 
-# 테이블 정의
+# SQLModel 정의
 
 
 class User(SQLModel, table=True):
