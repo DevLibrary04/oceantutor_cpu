@@ -19,6 +19,7 @@ python -m venv .venv
     1. [Server]
     2. [Data Import]
     3. Import from Self-Contained File
+    4. Insert some data into your desired schema so that you can test
     ```
 
 2. Create .env file and enter
