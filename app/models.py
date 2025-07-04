@@ -80,7 +80,6 @@ class GichulSet(SQLModel, table=True):
     inning: GichulSetInning
 
     qnas: List["GichulQna"] = Relationship(back_populates="gichul_set")
-    odaps: List["Odap"] = Relationship(back_populates="gichul_set")
 
 
 class Chat(SQLModel, table=True):
@@ -128,9 +127,10 @@ class GichulQna(SQLModel, table=True):
     ex4str: Optional[str] = Field(default=None, max_length=45)
     answer: Optional[str] = Field(default=None, max_length=45)
     explanation: Optional[str] = Field(default=None, max_length=450)
-
     gichulset_id: Optional[int] = Field(default=None, foreign_key="gichulset.id")
+
     gichul_set: Optional[GichulSet] = Relationship(back_populates="qnas")
+    odaps: List["Odap"] = Relationship(back_populates="gichul_qna")
 
 
 class Odap(SQLModel, table=True):
@@ -139,13 +139,13 @@ class Odap(SQLModel, table=True):
     __tablename__: ClassVar[str] = "odap"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    user_answer: Optional[str] = Field(default=None, max_length=45)
+    user_answer: str = Field(max_length=45)
     created_date: Optional[datetime] = Field(
         default=None, sa_column=Column(TIMESTAMP, server_default=func.now())
     )
 
-    user_id: Optional[int] = Field(default=None, foreign_key="user.id")
-    gichulset_id: Optional[int] = Field(default=None, foreign_key="gichulset.id")
+    user_id: int = Field(foreign_key="user.id")
+    gichulqna_id: int = Field(foreign_key="gichulqna.id")
 
     user: Optional[User] = Relationship(back_populates="odaps")
-    gichul_set: Optional[GichulSet] = Relationship(back_populates="odaps")
+    gichul_qna: Optional[GichulQna] = Relationship(back_populates="odaps")
