@@ -77,7 +77,8 @@ def insertData(engine: Engine, json_file_path: Path):
 
 
 # 디렉토리 순회
-path = Path("C:/Users/user/Downloads/해기사기출DB(2021-2023)")
+# path = Path("C:/Users/temp/Downloads/해기사기출DB(2021-2023)")
+# path = Path("C:/Users/user/Downloads/해기사기출DB(2021-2023)")
 engine = run_engine()
 if engine:
     for questionfolder in path.glob("*/*"):
