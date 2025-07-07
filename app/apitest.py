@@ -30,3 +30,6 @@ def return_one_user():
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
         return user
+
+
+Message.model_rebuild()
