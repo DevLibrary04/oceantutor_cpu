@@ -11,6 +11,7 @@ from sqlmodel import (
     Text,
 )
 from sqlalchemy.sql import func
+from sqlalchemy import Column, Enum as SQLAlchemyEnum, Text
 
 
 # Enum 정의
@@ -23,6 +24,7 @@ class GichulSetType(str, enum.Enum):
 
 
 class GichulSetGrade(str, enum.Enum):
+    grade_none = "0"
     grade_1 = "1"
     grade_2 = "2"
     grade_3 = "3"
@@ -74,12 +76,30 @@ class GichulSet(SQLModel, table=True):
     __tablename__: ClassVar[str] = "gichulset"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    type: GichulSetType
-    grade: GichulSetGrade
+    type: GichulSetType = Field(
+        sa_column=Column(
+            SQLAlchemyEnum(
+                GichulSetType, values_callable=lambda x: [e.value for e in x]
+            )
+        )
+    )
+    grade: GichulSetGrade = Field(
+        sa_column=Column(
+            SQLAlchemyEnum(
+                GichulSetGrade, values_callable=lambda x: [e.value for e in x]
+            )
+        )
+    )
     year: int
-    inning: GichulSetInning
+    inning: GichulSetInning = Field(
+        sa_column=Column(
+            SQLAlchemyEnum(
+                GichulSetInning, values_callable=lambda x: [e.value for e in x]
+            )
+        )
+    )
 
-    qnas: List["GichulQna"] = Relationship(back_populates="gichul_set")
+    qnas: List["GichulQna"] = Relationship(back_populates="gichulset")
 
 
 class Chat(SQLModel, table=True):
@@ -118,18 +138,24 @@ class GichulQna(SQLModel, table=True):
     __tablename__: ClassVar[str] = "gichulqna"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    subject: GichulSubject
+    subject: GichulSubject = Field(
+        sa_column=Column(
+            SQLAlchemyEnum(
+                GichulSubject, values_callable=lambda x: [e.value for e in x]
+            )
+        )
+    )
     qnum: Optional[int] = Field(default=None)
-    questionstr: Optional[str] = Field(default=None, max_length=450)
-    ex1str: Optional[str] = Field(default=None, max_length=45)
-    ex2str: Optional[str] = Field(default=None, max_length=45)
-    ex3str: Optional[str] = Field(default=None, max_length=45)
-    ex4str: Optional[str] = Field(default=None, max_length=45)
+    questionstr: Optional[str] = Field(default=None, sa_column=Column(Text))
+    ex1str: Optional[str] = Field(default=None, sa_column=Column(Text))
+    ex2str: Optional[str] = Field(default=None, sa_column=Column(Text))
+    ex3str: Optional[str] = Field(default=None, sa_column=Column(Text))
+    ex4str: Optional[str] = Field(default=None, sa_column=Column(Text))
     answer: Optional[str] = Field(default=None, max_length=45)
     explanation: Optional[str] = Field(default=None, max_length=450)
     gichulset_id: Optional[int] = Field(default=None, foreign_key="gichulset.id")
 
-    gichul_set: Optional[GichulSet] = Relationship(back_populates="qnas")
+    gichulset: Optional[GichulSet] = Relationship(back_populates="qnas")
     odaps: List["Odap"] = Relationship(back_populates="gichul_qna")
 
 
