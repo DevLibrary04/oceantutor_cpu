@@ -11,19 +11,39 @@ from ..models import (
     GichulSubject,
 )
 from pathlib import Path
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 router = APIRouter(prefix="/solve", tags=["Transfer Gichul QnAs"])
 
+base_path = Path(os.getenv("BASE_PATH"))
+
+
 def path_getter(directory: str):
-    path_base = Path("C:/Users/user/Downloads/해기사기출DB(2021-2023)")
-    path_to_search = path_base / directory
+    path_to_search = base_path / directory
     png_files = list(path_to_search.glob("*.png"))
     return png_files
 
-def dir_maker(year: str,
-    license: GichulSetType,
-    level: GichulSetGrade,
-    round: GichulSetInning):
+
+def dir_maker(
+    year: str, license: GichulSetType, level: GichulSetGrade, round: GichulSetInning
+):
+    esd = ""
+    if license == GichulSetType.gigwansa:
+        esd = "E"
+    elif license == GichulSetType.hanghaesa:
+        esd = "D"
+    elif license == GichulSetType.sohyeong:
+        esd = "S"
+
+    grd = level.value
+
+    inn = round.value
+
+    dir_path = f"{license.value}/{esd}{grd}_{year}_0{inn}"
+    return dir_path
 
 
 @router.get("/")
@@ -34,8 +54,8 @@ def get_one_inning(
     round: GichulSetInning,
     db: Session = Depends(get_db),
 ):
-    directory = 
-    paths = path_getter()
+    directory = dir_maker(year, license, level, round)
+    paths = path_getter(directory)
     try:
         gichulset = db.exec(
             select(GichulSet).where(
@@ -45,17 +65,12 @@ def get_one_inning(
                 GichulSet.inning == round,
             )
         ).one()
-        return {"qnas":gichulset.qnas, "imgPaths":paths}
+        return {"qnas": gichulset.qnas, "imgURLs": paths}
     except Exception as e:
         return {"message": e}
 
 
-@router.get("/img")
-def get_one_image(path: Path):
+@router.get("/img/{endpath}")
+def get_one_image(endpath: Path):
+    path = base_path / endpath
     return FileResponse(path=path, media_type="image/png")
-
-def main():
-    path_getter("기관사/E1_2021_01")
-
-if __name__ == "__main__":
-    main()
