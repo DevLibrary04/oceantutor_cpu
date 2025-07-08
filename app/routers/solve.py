@@ -24,7 +24,8 @@ base_path = Path(os.getenv("BASE_PATH"))
 def path_getter(directory: str):
     path_to_search = base_path / directory
     png_files = list(path_to_search.glob("*.png"))
-    return png_files
+    rel_paths = [str(p.relative_to(base_path)) for p in png_files]
+    return rel_paths
 
 
 def dir_maker(
@@ -71,6 +72,6 @@ def get_one_inning(
 
 
 @router.get("/img/{endpath}")
-def get_one_image(endpath: Path):
+def get_one_image(endpath: str):
     path = base_path / endpath
     return FileResponse(path=path, media_type="image/png")
