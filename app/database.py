@@ -8,6 +8,8 @@ load_dotenv()
 # SQLAlchemy 엔진
 
 mysql_url = os.getenv("DATABASE_URL")
+if not mysql_url:
+    raise ValueError("Environment variable not loaded")
 engine = create_engine(mysql_url, echo=True)
 
 
