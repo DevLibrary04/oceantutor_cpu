@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Literal
 from fastapi import APIRouter, Depends, status, HTTPException
 from fastapi.responses import FileResponse
 from sqlmodel import Session, select
@@ -62,7 +62,7 @@ def dir_maker(
 
 @router.get("/")
 def get_one_inning(
-    year: str,
+    year: Literal["2021", "2022", "2023"],
     license: GichulSetType,
     level: GichulSetGrade,
     round: GichulSetInning,
