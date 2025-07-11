@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from .routers import auth, solve, modelcall
+from .routers import auth, solve, modelcall, cbt
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
@@ -12,11 +12,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(auth.router, prefix="/api")
+app.include_router(auth.router)
 
-app.include_router(solve.router, prefix="/api")
+app.include_router(solve.router)
 
-app.include_router(modelcall.router, prefix="/api")
+app.include_router(modelcall.router)
+
+app.include_router(cbt.router)
 
 
 @app.get("/")

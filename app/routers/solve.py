@@ -1,3 +1,4 @@
+from typing import Annotated
 from fastapi import APIRouter, Depends, status, HTTPException
 from fastapi.responses import FileResponse
 from sqlmodel import Session, select
@@ -65,10 +66,12 @@ def get_one_inning(
     license: GichulSetType,
     level: GichulSetGrade,
     round: GichulSetInning,
-    db: Session = Depends(get_db),
+    db: Annotated[Session, Depends(get_db)],
 ):
-    directory = dir_maker(year, license, level, round)
-    path_dict = path_getter(directory)
+    directory = dir_maker(year, license, level, round)  # 해당 회차 폴더 정보
+    path_dict = path_getter(
+        directory
+    )  # 해당 회차 폴더 속 이미지 파일들 경로 -> {"@pic땡땡": "경로정보"}
     try:
         gichulset = db.exec(
             select(GichulSet).where(
@@ -78,25 +81,29 @@ def get_one_inning(
                 GichulSet.inning == round,
             )
         ).one()
-        qnas_as_dicts = [qna.model_dump() for qna in gichulset.qnas]
-        pic_marker_reg = re.compile(r"@(\w+)")
+        qnas_as_dicts = [
+            qna.model_dump() for qna in gichulset.qnas
+        ]  # 경로 정보 추가하기 위해 dict로
+        pic_marker_reg = re.compile(r"@(\w+)")  # 문항속 @pic 찾기위한 regex
 
         for qna_dict in qnas_as_dicts:
             full_text = " ".join(
                 qna_dict.get(key, " ")
                 for key in ["questionstr", "ex1str", "ex2str", "ex3str", "ex4str"]
             )
-            found_pics = pic_marker_reg.findall(full_text)
+            found_pics = pic_marker_reg.findall(
+                full_text
+            )  # 문항 속 문제, 보기 다 합치고 @pic 찾기 -> ['@pic땡땡', ...]
             if found_pics:
                 img_paths = [
                     path_dict[pic_name]
                     for pic_name in found_pics
                     if pic_name in path_dict
                 ]
-                qna_dict["imgPaths"] = img_paths
+                qna_dict["imgPaths"] = img_paths  # 해당 문항 속 이미지 경로 정보 추가
         return {"qnas": qnas_as_dicts}
     except Exception as e:
-        return {"message": e}
+        return {"message": e}  # 아직 예외처리 안함
 
 
 @router.get("/img/{endpath:path}")
