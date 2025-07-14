@@ -1,7 +1,7 @@
 from typing import Annotated, List
 from fastapi import APIRouter, Depends, status, HTTPException, Query
 from sqlmodel import Session, select
-from .solve import path_getter, dir_maker
+from ..utils.solve_utils import path_getter, dir_maker
 from ..database import get_db
 from ..models import (
     GichulQna,

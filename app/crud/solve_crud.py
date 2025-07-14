@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Literal, Optional
 from sqlmodel import Session, select
 from ..models import (
     GichulSet,
@@ -20,7 +20,7 @@ def get_one_inning(
     level: GichulSetGrade,
     round: GichulSetInning,
     db: Session,
-) -> GichulSet:
+) -> Optional[GichulSet]:
     gichulset = db.exec(
         select(GichulSet).where(
             GichulSet.grade == level,
@@ -28,5 +28,5 @@ def get_one_inning(
             GichulSet.type == license,
             GichulSet.inning == round,
         )
-    ).one()
+    ).one_or_none()
     return gichulset

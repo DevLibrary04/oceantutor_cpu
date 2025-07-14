@@ -1,23 +1,12 @@
-from typing import Literal, Dict, Any, List
-from sqlmodel import Session
+from typing import Dict, Any, List
+from ..core.config import settings
 from ..models import (
     GichulSet,
-    GichulQna,
     GichulSetType,
     GichulSetInning,
     GichulSetGrade,
-    GichulSubject,
 )
-from pathlib import Path
-import os, re
-from dotenv import load_dotenv
-
-load_dotenv()
-
-base_path_str = os.getenv("BASE_PATH")
-if base_path_str is None:
-    raise ValueError("BASE_PATH not set")
-base_path = Path(base_path_str)
+import re
 
 
 def dir_maker(
@@ -42,6 +31,7 @@ def dir_maker(
 
 
 def path_getter(directory: str) -> Dict[str, str]:
+    base_path = settings.BASE_PATH
     path_to_search = base_path / directory
     png_files = list(path_to_search.glob("*.png"))
     path_dict = {}
@@ -72,7 +62,6 @@ def add_imgPaths_to_questions_if_any(
         # 문항 속 문제, 보기 다 합치고 @pic 찾기 -> ['@pic땡땡', ...]
         found_pics = pic_marker_reg.findall(full_text)
         if found_pics:
-            print(found_pics)
             img_paths = [
                 path_dict[pic_name.lower()]
                 for pic_name in found_pics

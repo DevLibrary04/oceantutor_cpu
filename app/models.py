@@ -1,7 +1,6 @@
 import enum
 from datetime import datetime
 from typing import List, Optional, ClassVar
-
 from sqlmodel import (
     SQLModel,
     Field,
@@ -132,11 +131,7 @@ class ChatTurn(SQLModel, table=True):
     chat: Optional[Chat] = Relationship(back_populates="chat_turns")
 
 
-class GichulQna(SQLModel, table=True):
-    """개별 기출문제 정보 테이블"""
-
-    __tablename__: ClassVar[str] = "gichulqna"
-
+class GichulQnaBase(SQLModel):
     id: Optional[int] = Field(default=None, primary_key=True)
     subject: GichulSubject = Field(
         sa_column=Column(
@@ -154,6 +149,12 @@ class GichulQna(SQLModel, table=True):
     answer: Optional[str] = Field(default=None, max_length=45)
     explanation: Optional[str] = Field(default=None, max_length=450)
     gichulset_id: Optional[int] = Field(default=None, foreign_key="gichulset.id")
+
+
+class GichulQna(GichulQnaBase, table=True):
+    """개별 기출문제 정보 테이블"""
+
+    __tablename__: ClassVar[str] = "gichulqna"
 
     gichulset: Optional[GichulSet] = Relationship(back_populates="qnas")
     odaps: List["Odap"] = Relationship(back_populates="gichul_qna")
