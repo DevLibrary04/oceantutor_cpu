@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from .routers import auth, solve, modelcall, cbt
+from .schemas import RootResponse
 from fastapi.middleware.cors import CORSMiddleware
+from typing import Dict
 
 app = FastAPI(root_path="/api")
 
@@ -21,7 +23,7 @@ app.include_router(modelcall.router)
 app.include_router(cbt.router)
 
 
-@app.get("/")
+@app.get("/", response_model=RootResponse)
 def read_root():
     return {
         "message": "This is the GET method from the very root end.",

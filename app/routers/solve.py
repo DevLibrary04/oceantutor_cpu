@@ -53,6 +53,8 @@ def dir_maker(
         esd = "S"
 
     grd = level.value
+    if level == GichulSetGrade.grade_none:
+        grd = GichulSetGrade.grade_1.value
 
     inn = round.value
 
@@ -95,10 +97,11 @@ def get_one_inning(
                 full_text
             )  # 문항 속 문제, 보기 다 합치고 @pic 찾기 -> ['@pic땡땡', ...]
             if found_pics:
+                print(found_pics)
                 img_paths = [
-                    path_dict[pic_name]
+                    path_dict[pic_name.lower()]
                     for pic_name in found_pics
-                    if pic_name in path_dict
+                    if pic_name.lower() in path_dict
                 ]
                 qna_dict["imgPaths"] = img_paths  # 해당 문항 속 이미지 경로 정보 추가
         return {"qnas": qnas_as_dicts}
