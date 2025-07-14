@@ -13,29 +13,12 @@ python -m venv .venv
 (.venv) pip install -r requirements.txt
 ```
 
-## Run the code
-1. Import the latest MySQL dump in the MySQL Workbench
-    ```
-    1. [Server]
-    2. [Data Import]
-    3. Import from Self-Contained File
-    4. Insert some data into your desired schema so that you can test
-    ```
-
-2. Create .env file and enter
-    > DATABASE_URL=mysql+pymysql://\<yourId>:\<yourPw>@localhost:3306/\<schemaName>
-
-3. Run the server with:
-    ```
-    fastapi dev app/apitest.py
-    ```
-
 ## Progress
 - [x] Create the backend project
 - [x] Set the basic DB structure in MySQL
 - [x] Set the equivalent SQLModel table model classes for FastAPI
-- [ ] Implement required CRUD functions for API returns
-- [ ] Implement required API endpoints
+- [x] Implement required CRUD functions for API returns
+- [x] Implement required API endpoints
 - [ ] Debug / Fix / Additional features
 - [ ] Build
 
