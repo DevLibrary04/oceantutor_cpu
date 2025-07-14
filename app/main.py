@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from .routers import auth, solve, modelcall, cbt
 from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI()
+app = FastAPI(root_path="/api")
 
 app.add_middleware(
     CORSMiddleware,

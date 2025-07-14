@@ -1,5 +1,5 @@
 from typing import Annotated, List
-from fastapi import APIRouter, Depends, status, HTTPException
+from fastapi import APIRouter, Depends, status, HTTPException, Query
 from sqlmodel import Session, select
 from .solve import path_getter, dir_maker
 from ..database import get_db
@@ -37,6 +37,8 @@ def cbt_imgpath_getter(set: GichulSet):
 def get_one_random_qna_set(
     license: GichulSetType,
     level: GichulSetGrade,
+    *,
+    subjects: List[GichulSubject] = Query(),
     db: Annotated[Session, Depends(get_db)],
 ):
     try:
@@ -58,7 +60,7 @@ def get_one_random_qna_set(
                         dic[qna.subject].append(
                             qna
                         )  # 문제+선택지1번이 다른 문항만 추가 Append only question that isn't duplicate
-        for subject in dic.keys():
+        for subject in subjects:
             random_qnas = random.sample(dic[subject], 25)  # 과목별로 25개 뽑기
 
             qnas_as_dicts = [
@@ -66,7 +68,8 @@ def get_one_random_qna_set(
             ]  # solve 속 이미지 경로 뽑는 로직과 대동소이
             pic_marker_reg = re.compile(r"@(\w+)")
 
-            for qna_dict in qnas_as_dicts:
+            for idx, qna_dict in enumerate(qnas_as_dicts):
+                qna_dict["qnum"] = idx + 1
                 full_text = " ".join(
                     qna_dict.get(key, " ")
                     for key in ["questionstr", "ex1str", "ex2str", "ex3str", "ex4str"]

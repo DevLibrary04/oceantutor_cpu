@@ -1,147 +1,92 @@
-from datetime import datetime, timedelta, timezone
-from typing import Annotated
+import sys, os, re, random
 
-import jwt
-from fastapi import Depends, FastAPI, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from jwt.exceptions import InvalidTokenError
-from passlib.context import CryptContext
-from pydantic import BaseModel
+# 프로젝트 루트를 sys.path에 추가
+sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 
-# to get a string like this run:
-# openssl rand -hex 32
-SECRET_KEY = "09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+from typing import Annotated, List, Optional
+from fastapi import APIRouter, Depends, status, HTTPException, FastAPI, Query
+from sqlmodel import Session, select
+from app.routers.solve import path_getter, dir_maker
+from app.database import get_db
+from app.models import (
+    GichulQna,
+    GichulSet,
+    GichulSetGrade,
+    GichulSetInning,
+    GichulSetType,
+    GichulSubject,
+)
+from pathlib import Path
+from collections import defaultdict
+from dotenv import load_dotenv
 
-
-fake_users_db = {
-    "johndoe": {
-        "username": "johndoe",
-        "full_name": "John Doe",
-        "email": "johndoe@example.com",
-        "hashed_password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",
-        "disabled": False,
-    }
-}
-
-
-class Token(BaseModel):
-    access_token: str
-    token_type: str
-
-
-class TokenData(BaseModel):
-    username: str | None = None
-
-
-class User(BaseModel):
-    username: str
-    email: str | None = None
-    full_name: str | None = None
-    disabled: bool | None = None
-
-
-class UserInDB(User):
-    hashed_password: str
-
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+load_dotenv()
 
 app = FastAPI()
 
-
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
-
-
-def get_password_hash(password):
-    return pwd_context.hash(password)
+base_path_str = os.getenv("BASE_PATH")
+if base_path_str is None:
+    raise ValueError("BASE_PATH not set")
+base_path = Path(base_path_str)
 
 
-def get_user(db, username: str):
-    if username in db:
-        user_dict = db[username]
-        return UserInDB(**user_dict)
-
-
-def authenticate_user(fake_db, username: str, password: str):
-    user = get_user(fake_db, username)
-    if not user:
-        return False
-    if not verify_password(password, user.hashed_password):
-        return False
-    return user
-
-
-def create_access_token(data: dict, expires_delta: timedelta | None = None):
-    to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
-    else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=15)
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
-
-
-async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
+def cbt_imgpath_getter(set: GichulSet):
+    directory = dir_maker(
+        year=str(set.year), license=set.type, level=set.grade, round=set.inning
     )
+    return directory
+
+
+@app.get("/")
+def get_one_random_qna_set(
+    license: GichulSetType,
+    level: GichulSetGrade,
+    *,
+    subjects: List[GichulSubject] = Query(),
+    db: Annotated[Session, Depends(get_db)],
+):
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username = payload.get("sub")
-        if username is None:
-            raise credentials_exception
-        token_data = TokenData(username=username)
-    except InvalidTokenError:
-        raise credentials_exception
-    user = get_user(fake_users_db, username=token_data.username)
-    if user is None:
-        raise credentials_exception
-    return user
+        sets = db.exec(
+            select(GichulSet).where(GichulSet.type == license, GichulSet.grade == level)
+        ).all()  # The list of 12 GichulSet objects
+        dic = defaultdict(list)
+        random_set = defaultdict()
+        path_dict = {}
+        for set in sets:  # 12개 기출셋 순회
+            dir = cbt_imgpath_getter(set)  # 해당 회차 폴더 정보
+            path_dict[set.id] = path_getter(
+                dir
+            )  # 해당 회차 폴더 속 이미지 파일들 경로 -> path_dict[셋id] = {"@pic땡땡": "경로정보"}
+            for qna in set.qnas:  # qna객체 순회
+                if qna.questionstr and qna.ex1str:
+                    joined_text = " ".join([qna.questionstr, qna.ex1str])
+                    if joined_text not in dic[qna.subject]:
+                        dic[qna.subject].append(
+                            qna
+                        )  # 문제+선택지1번이 다른 문항만 추가 Append only question that isn't duplicate
+        for subject in subjects:
+            random_qnas = random.sample(dic[subject], 25)  # 과목별로 25개 뽑기
+            qnas_as_dicts = [
+                qna.model_dump() for qna in random_qnas
+            ]  # solve 속 이미지 경로 뽑는 로직과 대동소이
+            pic_marker_reg = re.compile(r"@(\w+)")
 
-
-async def get_current_active_user(
-    current_user: Annotated[User, Depends(get_current_user)],
-):
-    if current_user.disabled:
-        raise HTTPException(status_code=400, detail="Inactive user")
-    return current_user
-
-
-@app.post("/token")
-async def login_for_access_token(
-    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-) -> Token:
-    user = authenticate_user(fake_users_db, form_data.username, form_data.password)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": user.username}, expires_delta=access_token_expires
-    )
-    return Token(access_token=access_token, token_type="bearer")
-
-
-@app.get("/users/me/", response_model=User)
-async def read_users_me(
-    current_user: Annotated[User, Depends(get_current_active_user)],
-):
-    return current_user
-
-
-@app.get("/users/me/items/")
-async def read_own_items(
-    current_user: Annotated[User, Depends(get_current_active_user)],
-):
-    return [{"item_id": "Foo", "owner": current_user.username}]
+            for idx, qna_dict in enumerate(qnas_as_dicts):
+                qna_dict["qnum"] = idx + 1
+                full_text = " ".join(
+                    qna_dict.get(key, " ")
+                    for key in ["questionstr", "ex1str", "ex2str", "ex3str", "ex4str"]
+                )
+                found_pics = pic_marker_reg.findall(full_text)
+                if found_pics:
+                    img_paths = [
+                        path_dict[qna_dict["gichulset_id"]][pic_name]
+                        for pic_name in found_pics
+                        if pic_name in path_dict[qna_dict["gichulset_id"]]
+                    ]
+                    qna_dict["imgPaths"] = img_paths
+            random_set[subject] = qnas_as_dicts
+        return random_set
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=418, detail="teapot here")  # 예외처리 미루기
