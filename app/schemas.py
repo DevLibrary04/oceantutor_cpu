@@ -16,3 +16,15 @@ class QnaWithImgPaths(GichulQnaBase):
 
 class SolveResponse(BaseModel):
     qnas: List[QnaWithImgPaths]
+
+
+# auth
+class UserBaseTest(BaseModel):
+    username: str
+    email: Optional[str] = None
+    full_name: Optional[str] = None
+    disabled: Optional[str] = None
+
+
+class UserInDB(UserBaseTest):
+    hashed_password: str

@@ -1,92 +1,98 @@
-import sys, os, re, random
+import sys, os
 
 # 프로젝트 루트를 sys.path에 추가
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 
-from typing import Annotated, List, Optional
-from fastapi import APIRouter, Depends, status, HTTPException, FastAPI, Query
-from sqlmodel import Session, select
-from app.routers.solve import path_getter, dir_maker
-from app.database import get_db
-from app.models import (
-    GichulQna,
-    GichulSet,
-    GichulSetGrade,
-    GichulSetInning,
-    GichulSetType,
-    GichulSubject,
-)
-from pathlib import Path
-from collections import defaultdict
-from dotenv import load_dotenv
+from typing import Annotated, Dict, List, Optional
+from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from pydantic import BaseModel
 
-load_dotenv()
+fake_users_db: Dict[str, Dict] = {
+    "johndoe": {
+        "username": "johndoe",
+        "full_name": "John Doe",
+        "email": "johndoe@example.com",
+        "hashed_password": "fakehashedsecret",
+        "disabled": False,
+    },
+    "alice": {
+        "username": "alice",
+        "full_name": "Alice Wonderson",
+        "email": "alice@example.com",
+        "hashed_password": "fakehashedsecret2",
+        "disabled": True,
+    },
+}
 
 app = FastAPI()
 
-base_path_str = os.getenv("BASE_PATH")
-if base_path_str is None:
-    raise ValueError("BASE_PATH not set")
-base_path = Path(base_path_str)
+
+def fake_hash_password(password: str) -> str:
+    return "fakehashed" + password
 
 
-def cbt_imgpath_getter(set: GichulSet):
-    directory = dir_maker(
-        year=str(set.year), license=set.type, level=set.grade, round=set.inning
-    )
-    return directory
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
-@app.get("/")
-def get_one_random_qna_set(
-    license: GichulSetType,
-    level: GichulSetGrade,
-    *,
-    subjects: List[GichulSubject] = Query(),
-    db: Annotated[Session, Depends(get_db)],
+class User(BaseModel):
+    username: str
+    email: str | None = None
+    full_name: str | None = None
+    disabled: bool | None = None
+
+
+class UserInDB(User):
+    hashed_password: str
+
+
+def get_user(db, username: str) -> Optional[UserInDB]:
+    if username in db:
+        user_dict = db[username]
+        return UserInDB(**user_dict)
+
+
+def fake_decode_token(token):
+    # This doesn't provide any security at all
+    # Check the next version
+    user = get_user(fake_users_db, token)
+    return user
+
+
+async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
+    user = fake_decode_token(token)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return user
+
+
+async def get_current_active_user(
+    current_user: Annotated[User, Depends(get_current_user)],
 ):
-    try:
-        sets = db.exec(
-            select(GichulSet).where(GichulSet.type == license, GichulSet.grade == level)
-        ).all()  # The list of 12 GichulSet objects
-        dic = defaultdict(list)
-        random_set = defaultdict()
-        path_dict = {}
-        for set in sets:  # 12개 기출셋 순회
-            dir = cbt_imgpath_getter(set)  # 해당 회차 폴더 정보
-            path_dict[set.id] = path_getter(
-                dir
-            )  # 해당 회차 폴더 속 이미지 파일들 경로 -> path_dict[셋id] = {"@pic땡땡": "경로정보"}
-            for qna in set.qnas:  # qna객체 순회
-                if qna.questionstr and qna.ex1str:
-                    joined_text = " ".join([qna.questionstr, qna.ex1str])
-                    if joined_text not in dic[qna.subject]:
-                        dic[qna.subject].append(
-                            qna
-                        )  # 문제+선택지1번이 다른 문항만 추가 Append only question that isn't duplicate
-        for subject in subjects:
-            random_qnas = random.sample(dic[subject], 25)  # 과목별로 25개 뽑기
-            qnas_as_dicts = [
-                qna.model_dump() for qna in random_qnas
-            ]  # solve 속 이미지 경로 뽑는 로직과 대동소이
-            pic_marker_reg = re.compile(r"@(\w+)")
+    if current_user.disabled:
+        raise HTTPException(status_code=400, detail="Inactive user")
+    return current_user
 
-            for idx, qna_dict in enumerate(qnas_as_dicts):
-                qna_dict["qnum"] = idx + 1
-                full_text = " ".join(
-                    qna_dict.get(key, " ")
-                    for key in ["questionstr", "ex1str", "ex2str", "ex3str", "ex4str"]
-                )
-                found_pics = pic_marker_reg.findall(full_text)
-                if found_pics:
-                    img_paths = [
-                        path_dict[qna_dict["gichulset_id"]][pic_name]
-                        for pic_name in found_pics
-                        if pic_name in path_dict[qna_dict["gichulset_id"]]
-                    ]
-                    qna_dict["imgPaths"] = img_paths
-            random_set[subject] = qnas_as_dicts
-        return random_set
-    except Exception as e:
-        print(e)
-        raise HTTPException(status_code=418, detail="teapot here")  # 예외처리 미루기
+
+@app.post("/token")
+async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
+    user_dict = fake_users_db.get(form_data.username)
+    if not user_dict:
+        raise HTTPException(status_code=400, detail="Incorrect username or password")
+    user = UserInDB(**user_dict)
+    hashed_password = fake_hash_password(form_data.password)
+    if not hashed_password == user.hashed_password:
+        raise HTTPException(status_code=400, detail="Incorrect username or password")
+
+    return {"access_token": user.username, "token_type": "bearer"}
+
+
+@app.get("/users/me")
+async def read_users_me(
+    current_user: Annotated[User, Depends(get_current_active_user)],
+):
+    return current_user

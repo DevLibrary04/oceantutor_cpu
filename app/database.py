@@ -1,15 +1,9 @@
-from dotenv import load_dotenv
-import os
 from sqlmodel import create_engine, Session
-
-load_dotenv()
+from .core.config import settings
 
 
 # SQLAlchemy 엔진
-
-mysql_url = os.getenv("DATABASE_URL")
-if not mysql_url:
-    raise ValueError("Environment variable not loaded")
+mysql_url = settings.DATABASE_URL
 engine = create_engine(mysql_url, echo=True)
 
 

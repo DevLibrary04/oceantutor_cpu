@@ -1,6 +1,12 @@
+import sys
+import os
+
+# 프로젝트 루트를 sys.path에 추가
+sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
+
 import json
 from pathlib import Path
-from models import (
+from app.models import (
     GichulSet,
     GichulQna,
     GichulSetType,
@@ -8,7 +14,8 @@ from models import (
     GichulSetGrade,
     GichulSubject,
 )
-from database import run_engine
+from app.database import engine
+from dbcreation import main as dropcreate
 from sqlmodel import Session
 from sqlalchemy.engine import Engine
 import re
@@ -78,9 +85,9 @@ def insertData(engine: Engine, json_file_path: Path):
 
 # 디렉토리 순회
 # path = Path("C:/Users/temp/Downloads/해기사기출DB(2021-2023)")
-# path = Path("C:/Users/user/Downloads/해기사기출DB(2021-2023)")
-engine = run_engine()
-if engine:
+path = Path("C:/Users/user/Downloads/해기사기출DB(2021-2023)")
+if __name__ == "__main__":
+    dropcreate()
     for questionfolder in path.glob("*/*"):
         json_file_path = questionfolder / f"{questionfolder.name}.json"
         if not json_file_path.exists():

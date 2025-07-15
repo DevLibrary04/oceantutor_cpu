@@ -12,7 +12,7 @@ from ..models import (
 )
 from app.services import solve as solve_service
 
-router = APIRouter(prefix="/solve", tags=["Transfer Gichul QnAs"])
+router = APIRouter(prefix="/solve", tags=["Provide Gichul QnAs"])
 
 
 @router.get("/", response_model=SolveResponse)

@@ -1,6 +1,7 @@
 import enum
 from datetime import datetime
-from typing import List, Optional, ClassVar
+from typing import List, Optional, ClassVar, Annotated
+from fastapi import Depends
 from sqlmodel import (
     SQLModel,
     Field,
@@ -8,10 +9,13 @@ from sqlmodel import (
     Relationship,
     TIMESTAMP,
     Text,
+    create_engine,
+    Session,
+    Table,
 )
 from sqlalchemy.sql import func
 from sqlalchemy import Column, Enum as SQLAlchemyEnum, Text
-
+from .database import engine, get_db
 
 # Enum 정의
 
@@ -54,16 +58,17 @@ class GichulSubject(str, enum.Enum):
 
 
 # SQLModel 정의
+class UserBase(SQLModel):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    username: str = Field(max_length=45, unique=True, index=True)
+    indivname: str = Field(max_length=45)
+    password: str = Field(max_length=255)
 
 
-class User(SQLModel, table=True):
+class User(UserBase, table=True):
     """사용자 정보 테이블"""
 
     __tablename__: ClassVar[str] = "user"
-
-    id: Optional[int] = Field(default=None, primary_key=True)
-    name: str = Field(max_length=45, unique=True, index=True)
-    password: str = Field(max_length=255)
 
     chats: List["Chat"] = Relationship(back_populates="user")
     odaps: List["Odap"] = Relationship(back_populates="user")
