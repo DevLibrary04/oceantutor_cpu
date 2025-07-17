@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str
     GEMINI_APIKEY: str
     BASE_PATH: Path
+    SECRET_KEY: str
 
 
 settings = Settings()

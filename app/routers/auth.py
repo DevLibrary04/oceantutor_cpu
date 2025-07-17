@@ -1,82 +1,34 @@
 from typing import Annotated, Dict, Optional
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, logger
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from ..schemas import UserBaseTest, UserInDB
+from pydantic import BaseModel, EmailStr, Field
+from sqlmodel import Session
+from ..database import get_db
+from ..crud import user_crud
+from ..models import UserBase
+from ..services.user import register_one_user, sign_user_in
+from ..schemas import CreateUser, CreateUserResponse
 
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
-fake_users_db = {
-    "johndoe": {
-        "username": "johndoe",
-        "full_name": "John Doe",
-        "email": "johndoe@example.com",
-        "hashed_password": "fakehashedsecret",
-        "disabled": False,
-    },
-    "alice": {
-        "username": "alice",
-        "full_name": "Alice Wonderson",
-        "email": "alice@example.com",
-        "hashed_password": "fakehashedsecret2",
-        "disabled": True,
-    },
-}
-
-
-def fake_hash_password(password: str):
-    return "fakehashed" + password
-
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
-
-def get_user(db: Dict[str, UserInDB], username: str) -> Optional[UserInDB]:
-    if username in db:
-        user_dict = db[username]
-        return UserInDB(**user_dict.model_dump())
-
-
-def fake_decode_token(token: str) -> UserBaseTest:
-    return UserBaseTest(username=token + "fakedecoded", email="john@example.com")
-
-
-async def get_current_user(
-    token: Annotated[str, Depends(oauth2_scheme)],
-) -> UserBaseTest:
-    user = fake_decode_token(token)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid auth credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    return user
-
-
-async def get_current_active_user(
-    current_user: Annotated[UserBaseTest, Depends(get_current_user)],
+@router.post("/signup", response_model=CreateUserResponse)
+async def user_signup(
+    user_in: CreateUser,
+    db: Annotated[Session, Depends(get_db)],
 ):
-    if current_user.disabled:
-        raise HTTPException(status_code=400, detail="inactive user")
-    return current_user
+    return register_one_user(user_in, db)
 
 
-# @router.post("/token")
-async def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
-    user_dict = fake_users_db.get(form_data.username)
-    if not user_dict:
-        raise HTTPException(status_code=400, detail="incorrect username or password")
-    user = UserInDB(**user_dict)
-    hashed_password = fake_hash_password(form_data.password)
-    if not hashed_password == user.hashed_password:
-        raise HTTPException(status_code=400, detail="incorrect username or password")
-    return {"access_token": user.username, "token_type": "bearer"}
-
-
-# @router.get("/users/me", response_model=UserBaseTest)
-async def auth_root(
-    current_user: Annotated[UserBaseTest, Depends(get_current_active_user)],
+@router.post("/token")
+async def sign_user_in_for_access_token(
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    db: Annotated[Session, Depends(get_db)],
 ):
-    return current_user
+    return sign_user_in(form_data, db)
+
+
+@router.get("/me")
+async def protected_endpoint_test():
+    pass

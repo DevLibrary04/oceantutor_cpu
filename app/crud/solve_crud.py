@@ -2,16 +2,10 @@ from typing import Literal, Optional
 from sqlmodel import Session, select
 from ..models import (
     GichulSet,
-    GichulQna,
     GichulSetType,
     GichulSetInning,
     GichulSetGrade,
-    GichulSubject,
 )
-from pathlib import Path
-import re
-from ..utils import solve_utils
-from dotenv import load_dotenv
 
 
 def get_one_inning(

@@ -13,6 +13,7 @@ from sqlmodel import (
     Session,
     Table,
 )
+from pydantic import EmailStr, ConfigDict
 from sqlalchemy.sql import func
 from sqlalchemy import Column, Enum as SQLAlchemyEnum, Text
 from .database import engine, get_db
@@ -59,13 +60,17 @@ class GichulSubject(str, enum.Enum):
 
 # SQLModel 정의
 class UserBase(SQLModel):
+    username: EmailStr = Field(max_length=45, unique=True, index=True, alias="email")
+    indivname: str = Field(max_length=45, alias="name")
+
+
+class DBUser(UserBase):
     id: Optional[int] = Field(default=None, primary_key=True)
-    username: str = Field(max_length=45, unique=True, index=True)
-    indivname: str = Field(max_length=45)
-    password: str = Field(max_length=255)
+    hashed_password: str = Field(max_length=60)
+    disabled: bool = Field(default=False)
 
 
-class User(UserBase, table=True):
+class User(DBUser, table=True):
     """사용자 정보 테이블"""
 
     __tablename__: ClassVar[str] = "user"

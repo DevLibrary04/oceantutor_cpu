@@ -1,6 +1,7 @@
 from typing import Optional, List
-from pydantic import BaseModel
-from .models import GichulQnaBase
+from pydantic import BaseModel, EmailStr, ConfigDict
+from sqlmodel import SQLModel, Field
+from .models import GichulQnaBase, UserBase
 
 
 # main.py
@@ -19,12 +20,18 @@ class SolveResponse(BaseModel):
 
 
 # auth
-class UserBaseTest(BaseModel):
-    username: str
-    email: Optional[str] = None
-    full_name: Optional[str] = None
-    disabled: Optional[str] = None
 
 
-class UserInDB(UserBaseTest):
-    hashed_password: str
+class CreateUser(UserBase):
+    password: str
+
+
+class CreateUserResponse(BaseModel):
+    email: str
+    name: str
+    message: str = "User successfully registered!"
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
