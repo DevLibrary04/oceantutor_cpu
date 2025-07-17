@@ -15,6 +15,7 @@ from app.models import (
     GichulSubject,
 )
 from app.database import engine
+from app.core.config import settings
 from dbcreation import main as dropcreate
 from sqlmodel import Session
 from sqlalchemy.engine import Engine
@@ -84,8 +85,7 @@ def insertData(engine: Engine, json_file_path: Path):
 
 
 # 디렉토리 순회
-# path = Path("C:/Users/temp/Downloads/해기사기출DB(2021-2023)")
-path = Path("C:/Users/user/Downloads/해기사기출DB(2021-2023)")
+path = settings.BASE_PATH
 if __name__ == "__main__":
     dropcreate()
     for questionfolder in path.glob("*/*"):

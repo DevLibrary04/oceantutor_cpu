@@ -1,12 +1,9 @@
 import jwt
 from datetime import datetime, timedelta, timezone
-from typing import Annotated, Optional, Dict
+from typing import Optional, Dict
 from sqlmodel import Session
-from fastapi import HTTPException, status
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from ..models import User
+from fastapi.security import OAuth2PasswordRequestForm
 from ..crud import user_crud
-from ..schemas import CreateUser, CreateUserResponse
 from ..core.security import pwd_context, SECRET_KEY, ALGORITHM
 
 

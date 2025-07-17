@@ -1,8 +1,7 @@
-from datetime import datetime, timedelta, timezone
-from typing import Annotated
+from datetime import timedelta
 from sqlmodel import Session
 from fastapi import HTTPException, status
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordRequestForm
 from ..models import User
 from ..crud import user_crud
 from ..schemas import CreateUser, CreateUserResponse, Token

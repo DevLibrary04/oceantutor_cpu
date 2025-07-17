@@ -1,12 +1,11 @@
-from typing import Annotated, Dict, Optional
-from fastapi import APIRouter, Depends, HTTPException, status, logger
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from pydantic import BaseModel, EmailStr, Field
+from typing import Annotated
+from fastapi import APIRouter, Depends
+from fastapi.security import OAuth2PasswordRequestForm
 from sqlmodel import Session
 from ..database import get_db
-from ..crud import user_crud
 from ..models import UserBase
 from ..services.user import register_one_user, sign_user_in
+from ..dependencies import get_current_active_user
 from ..schemas import CreateUser, CreateUserResponse
 
 
@@ -29,6 +28,8 @@ async def sign_user_in_for_access_token(
     return sign_user_in(form_data, db)
 
 
-@router.get("/me")
-async def protected_endpoint_test():
-    pass
+@router.get("/sign/me")
+async def protected_endpoint_test(
+    current_user: Annotated[UserBase, Depends(get_current_active_user)],
+):
+    return current_user

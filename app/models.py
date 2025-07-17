@@ -1,7 +1,6 @@
 import enum
 from datetime import datetime
 from typing import List, Optional, ClassVar, Annotated
-from fastapi import Depends
 from sqlmodel import (
     SQLModel,
     Field,
@@ -9,14 +8,10 @@ from sqlmodel import (
     Relationship,
     TIMESTAMP,
     Text,
-    create_engine,
-    Session,
-    Table,
 )
 from pydantic import EmailStr, ConfigDict
 from sqlalchemy.sql import func
 from sqlalchemy import Column, Enum as SQLAlchemyEnum, Text
-from .database import engine, get_db
 
 # Enum 정의
 
@@ -60,8 +55,8 @@ class GichulSubject(str, enum.Enum):
 
 # SQLModel 정의
 class UserBase(SQLModel):
-    username: EmailStr = Field(max_length=45, unique=True, index=True, alias="email")
-    indivname: str = Field(max_length=45, alias="name")
+    username: EmailStr = Field(max_length=45, unique=True, index=True)
+    indivname: str = Field(max_length=45)
 
 
 class DBUser(UserBase):
