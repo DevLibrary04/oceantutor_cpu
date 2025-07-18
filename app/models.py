@@ -53,6 +53,19 @@ class GichulSubject(str, enum.Enum):
     jikmu = "직무일반"
 
 
+class ExamType(str, enum.Enum):
+    practice = "practice"
+    real = "exam"
+    cbt = "cbt"
+
+
+class OdapChoice(str, enum.Enum):
+    ex1 = "가"
+    ex2 = "나"
+    ex3 = "사"
+    ex4 = "아"
+
+
 # SQLModel 정의
 class UserBase(SQLModel):
     username: EmailStr = Field(max_length=45, unique=True, index=True)
@@ -71,7 +84,7 @@ class User(DBUser, table=True):
     __tablename__: ClassVar[str] = "user"
 
     chats: List["Chat"] = Relationship(back_populates="user")
-    odaps: List["Odap"] = Relationship(back_populates="user")
+    odapsets: List["OdapSet"] = Relationship(back_populates="user")
 
 
 class GichulSet(SQLModel, table=True):
@@ -165,19 +178,45 @@ class GichulQna(GichulQnaBase, table=True):
     odaps: List["Odap"] = Relationship(back_populates="gichul_qna")
 
 
+class OdapSet(SQLModel, table=True):
+    """오답을 생성한 페이지 정보"""
+
+    __tablename__: ClassVar[str] = "odapset"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    examtype: ExamType = Field(
+        sa_column=Column(
+            SQLAlchemyEnum(ExamType, values_callable=lambda x: [e.value for e in x])
+        )
+    )
+    user_id: Optional[int] = Field(default=None, foreign_key="user.id")
+    created_date: Optional[datetime] = Field(
+        default=None, sa_column=Column(TIMESTAMP, server_default=func.now())
+    )
+
+    user: Optional[User] = Relationship(back_populates="odapsets")
+    odaps: List["Odap"] = Relationship(back_populates="odapset")
+
+
 class Odap(SQLModel, table=True):
     """사용자의 오답 정보 테이블"""
 
     __tablename__: ClassVar[str] = "odap"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    user_answer: str = Field(max_length=45)
-    created_date: Optional[datetime] = Field(
-        default=None, sa_column=Column(TIMESTAMP, server_default=func.now())
+    choice: OdapChoice = Field(
+        sa_column=Column(
+            SQLAlchemyEnum(OdapChoice, values_callable=lambda x: [e.value for e in x])
+        )
     )
-
-    user_id: int = Field(foreign_key="user.id")
     gichulqna_id: int = Field(foreign_key="gichulqna.id")
+    odapset_id: Optional[int] = Field(default=None, foreign_key="odapset.id")
 
-    user: Optional[User] = Relationship(back_populates="odaps")
     gichul_qna: Optional[GichulQna] = Relationship(back_populates="odaps")
+    odapset: Optional[OdapSet] = Relationship(back_populates="odaps")
+
+
+class Something(SQLModel):
+    choice: Optional[str]
+    user_id: Optional[int] = Field(default=None, foreign_key="user.id")
+    gichulqna_id: Optional[int] = Field(default=None, foreign_key="gichulqna.id")

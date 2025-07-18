@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional, List, Literal
 from pydantic import BaseModel, EmailStr, ConfigDict
 from sqlmodel import SQLModel, Field
 from .models import GichulQnaBase, UserBase
@@ -16,6 +16,7 @@ class QnaWithImgPaths(GichulQnaBase):
 
 
 class SolveResponse(BaseModel):
+    odapset_id: Optional[int] = None
     qnas: List[QnaWithImgPaths]
 
 
@@ -37,3 +38,10 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     username: Optional[str] = None
+
+
+# odap
+class UserSolvedQna(BaseModel):
+    choice: Literal["가", "나", "사", "아"]
+    gichulqna_id: int
+    odapset_id: int

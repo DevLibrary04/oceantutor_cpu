@@ -28,3 +28,5 @@ python -m venv .venv
 ## See Also
 Frontend Project by [@rsh2231](https://github.com/rsh2231/MarinAI)\
 vLLM Project by [@DevLibrary04](https://github.com/DevLibrary04/marine_officer_test)
+
+[DB structure](https://dbdiagram.io/d/bonprojectdb-6864a258f413ba3508d26460)

@@ -6,7 +6,7 @@ from ..database import get_db
 from ..models import UserBase
 from ..services.user import register_one_user, sign_user_in
 from ..dependencies import get_current_active_user
-from ..schemas import CreateUser, CreateUserResponse
+from ..schemas import CreateUser, CreateUserResponse, Token
 
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -20,7 +20,7 @@ async def user_signup(
     return register_one_user(user_in, db)
 
 
-@router.post("/token")
+@router.post("/token", response_model=Token)
 async def sign_user_in_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: Annotated[Session, Depends(get_db)],
@@ -28,8 +28,8 @@ async def sign_user_in_for_access_token(
     return sign_user_in(form_data, db)
 
 
-@router.get("/sign/me")
-async def protected_endpoint_test(
+@router.get("/sign/me", response_model=UserBase)
+async def get_user_info(
     current_user: Annotated[UserBase, Depends(get_current_active_user)],
 ):
     return current_user

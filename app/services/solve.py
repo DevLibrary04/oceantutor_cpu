@@ -1,13 +1,9 @@
 from typing import Literal
 from sqlmodel import Session
 from fastapi import HTTPException, status
-from ..models import (
-    GichulSetType,
-    GichulSetInning,
-    GichulSetGrade,
-)
+from ..models import GichulSetType, GichulSetInning, GichulSetGrade, ExamType
 from ..utils import solve_utils
-from ..crud import solve_crud
+from ..crud import solve_crud, odapset_crud
 from ..schemas import SolveResponse, QnaWithImgPaths
 
 
