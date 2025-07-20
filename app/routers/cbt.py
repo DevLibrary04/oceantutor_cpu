@@ -1,29 +1,21 @@
+import re, random
 from typing import Annotated, List
-from fastapi import APIRouter, Depends, status, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session, select
+from collections import defaultdict
+from ..core.config import settings
 from ..utils.solve_utils import path_getter, dir_maker
 from ..database import get_db
 from ..models import (
-    GichulQna,
     GichulSet,
     GichulSetGrade,
-    GichulSetInning,
     GichulSetType,
     GichulSubject,
 )
-from pathlib import Path
-from collections import defaultdict
-import os, re, random
-from dotenv import load_dotenv
-
-load_dotenv()
 
 router = APIRouter(prefix="/cbt", tags=["Randomly Mixed Questions"])
 
-base_path_str = os.getenv("BASE_PATH")
-if base_path_str is None:
-    raise ValueError("BASE_PATH not set")
-base_path = Path(base_path_str)
+base_path = settings.BASE_PATH
 
 
 def cbt_imgpath_getter(set: GichulSet):

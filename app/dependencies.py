@@ -59,6 +59,8 @@ async def get_optional_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
+        if token is None:
+            return None
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username = payload.get("sub")
         if username is None:
@@ -80,4 +82,4 @@ async def get_optional_current_activate_user(
         return None
     elif current_user.disabled:
         return None
-    return UserBase(username=current_user.username, indivname=current_user.indivname)
+    return current_user
