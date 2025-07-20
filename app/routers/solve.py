@@ -1,29 +1,30 @@
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Optional
 from fastapi import APIRouter, Depends, status, HTTPException
 from fastapi.responses import FileResponse
 from sqlmodel import Session
+from ..dependencies import get_optional_current_activate_user
 from ..core.config import settings
 from ..database import get_db
 from ..schemas import SolveResponse
-from ..models import (
-    GichulSetType,
-    GichulSetInning,
-    GichulSetGrade,
-)
-from app.services import solve as solve_service
+from ..models import GichulSetType, GichulSetInning, GichulSetGrade, ExamType, User
+from ..services.solve import retrieve_one_inning
 
 router = APIRouter(prefix="/solve", tags=["Provide Gichul QnAs"])
 
 
 @router.get("/", response_model=SolveResponse)
 def get_one_inning(
+    examtype: Literal[ExamType.practice, ExamType.real],
     year: Literal["2021", "2022", "2023"],
     license: GichulSetType,
     level: GichulSetGrade,
     round: GichulSetInning,
     db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[
+        Optional[User], Depends(get_optional_current_activate_user)
+    ],
 ):
-    return solve_service.retrieve_one_inning(year, license, level, round, db)
+    return retrieve_one_inning(examtype, year, license, level, round, db, current_user)
 
 
 @router.get("/img/{endpath:path}", response_class=FileResponse)

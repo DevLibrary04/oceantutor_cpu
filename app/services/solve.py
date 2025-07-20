@@ -1,18 +1,20 @@
-from typing import Literal
+from typing import Literal, Optional
 from sqlmodel import Session
 from fastapi import HTTPException, status
-from ..models import GichulSetType, GichulSetInning, GichulSetGrade, ExamType
+from ..models import GichulSetType, GichulSetInning, GichulSetGrade, ExamType, User
 from ..utils import solve_utils
 from ..crud import solve_crud, odapset_crud
 from ..schemas import SolveResponse, QnaWithImgPaths
 
 
 def retrieve_one_inning(
+    examtype: ExamType,
     year: Literal["2021", "2022", "2023"],
     license: GichulSetType,
     level: GichulSetGrade,
     round: GichulSetInning,
     db: Session,
+    current_user: Optional[User],
 ) -> SolveResponse:
     # 해당 회차 폴더 정보
     directory = solve_utils.dir_maker(year, license, level, round)
@@ -27,4 +29,7 @@ def retrieve_one_inning(
     pdt_validated_list = [
         QnaWithImgPaths.model_validate(qna_dict) for qna_dict in new_qnas_list
     ]
-    return SolveResponse(qnas=pdt_validated_list)
+    if current_user is None:
+        return SolveResponse(qnas=pdt_validated_list)
+    new_odapset = odapset_crud.create_one_odapset(examtype, current_user.id, db)
+    return SolveResponse(odapset_id=new_odapset.id, qnas=pdt_validated_list)
