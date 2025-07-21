@@ -76,3 +76,11 @@ class OneOdap(BaseModel):
 class ManyOdaps(BaseModel):
     odapset_id: int
     odaps: List[OneOdap]
+
+# RAG
+class RAGRequest(BaseModel):
+    question: str
+    image_b64: Optional[str] = None
+
+class RAGResponse(BaseModel):
+    answer: str
