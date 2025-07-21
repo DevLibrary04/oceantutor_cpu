@@ -74,7 +74,7 @@ class UserBase(SQLModel):
 
 class DBUser(UserBase):
     id: Optional[int] = Field(default=None, primary_key=True)
-    hashed_password: str = Field(max_length=60)
+    hashed_password: Optional[str] = Field(default=None, max_length=60)
     disabled: bool = Field(default=False)
 
 
