@@ -3,10 +3,15 @@ from typing import Annotated, List
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session, select
 from collections import defaultdict
+from ..dependencies import get_optional_current_activate_user
 from ..core.config import settings
 from ..utils.solve_utils import path_getter, dir_maker
+from ..schemas import CBTResponse
 from ..database import get_db
 from ..models import (
+    ExamType,
+    OdapSet,
+    User,
     GichulSet,
     GichulSetGrade,
     GichulSetType,
@@ -32,6 +37,7 @@ def get_one_random_qna_set(
     *,
     subjects: List[GichulSubject] = Query(),
     db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_optional_current_activate_user)]
 ):
     try:
         sets = db.exec(
@@ -75,7 +81,13 @@ def get_one_random_qna_set(
                     ]
                     qna_dict["imgPaths"] = img_paths
             random_set[subject] = qnas_as_dicts
-        return random_set
+        if current_user is None:
+            return CBTResponse(subjects=random_set)
+        new_odapset = OdapSet(examtype=ExamType.cbt, user_id=current_user.id)
+        db.add(new_odapset)
+        db.commit()
+        db.refresh(new_odapset)
+        return CBTResponse(odapset_id=new_odapset.id, subjects=random_set)
     except Exception as e:
         print(e)
         raise HTTPException(status_code=418, detail="teapot here")  # 예외처리 미루기

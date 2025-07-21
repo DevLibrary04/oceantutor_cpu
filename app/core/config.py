@@ -9,6 +9,9 @@ class Settings(BaseSettings):
     GEMINI_APIKEY: str
     BASE_PATH: Path
     SECRET_KEY: str
+    GOOGLE_CLIENT_ID: str
+    GOOGLE_CLIENT_SECRET: str
+    GOOGLE_REDIRECT_URI: str
 
 
 settings = Settings()

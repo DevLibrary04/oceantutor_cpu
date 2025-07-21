@@ -214,9 +214,3 @@ class Odap(SQLModel, table=True):
 
     gichul_qna: Optional[GichulQna] = Relationship(back_populates="odaps")
     odapset: Optional[OdapSet] = Relationship(back_populates="odaps")
-
-
-class Something(SQLModel):
-    choice: Optional[str]
-    user_id: Optional[int] = Field(default=None, foreign_key="user.id")
-    gichulqna_id: Optional[int] = Field(default=None, foreign_key="gichulqna.id")

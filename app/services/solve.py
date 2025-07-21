@@ -31,5 +31,6 @@ def retrieve_one_inning(
     ]
     if current_user is None:
         return SolveResponse(qnas=pdt_validated_list)
+    assert current_user.id is not None
     new_odapset = odapset_crud.create_one_odapset(examtype, current_user.id, db)
     return SolveResponse(odapset_id=new_odapset.id, qnas=pdt_validated_list)

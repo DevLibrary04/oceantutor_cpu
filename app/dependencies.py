@@ -46,7 +46,7 @@ async def get_current_active_user(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user"
         )
-    return UserBase(username=current_user.username, indivname=current_user.indivname)
+    return current_user
 
 
 async def get_optional_current_user(
