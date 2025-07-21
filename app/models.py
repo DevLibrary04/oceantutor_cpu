@@ -75,6 +75,7 @@ class UserBase(SQLModel):
 class DBUser(UserBase):
     id: Optional[int] = Field(default=None, primary_key=True)
     hashed_password: Optional[str] = Field(default=None, max_length=60)
+    google_sub: Optional[str] = Field(default=None)
     disabled: bool = Field(default=False)
 
 

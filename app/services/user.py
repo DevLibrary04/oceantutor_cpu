@@ -1,12 +1,19 @@
 from datetime import timedelta
+from typing import Union
 from sqlmodel import Session
 from fastapi import HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
 from ..models import User
 from ..crud import user_crud
 from ..schemas import CreateUser, CreateUserResponse, Token
 from ..core.security import pwd_context, ACCESS_TOKEN_EXPIRE_MINUTES
+from ..core.config import settings
 from ..utils import user_utils
+
+
+google_client_id = settings.GOOGLE_CLIENT_ID
 
 
 def register_one_user(
@@ -48,3 +55,26 @@ def sign_user_in(form_data: OAuth2PasswordRequestForm, db: Session):
         {"sub": db_user.username}, access_token_expires
     )
     return Token(access_token=access_token, token_type="bearer")
+
+
+def sign_google_user(id_token_jwt: Union[str, bytes], db: Session):
+    try:
+        idinfo = id_token.verify_oauth2_token(
+            id_token_jwt,
+            google_requests.Request(),
+            google_client_id,
+        )
+        google_user = user_crud.read_one_google_user(idinfo["sub"], db)
+        if google_user is None:
+            new_user = User(
+                indivname=idinfo["name"],
+                username=idinfo["email"],
+                google_sub=idinfo["sub"],
+            )
+            user_crud.create_one_google_user(new_user, db)
+        else:
+            pass
+        return {}
+    except ValueError:
+        # ID 토큰이 유효하지 않은 경우
+        raise HTTPException(status_code=401, detail="Invalid Google ID token")
