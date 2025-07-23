@@ -4,11 +4,11 @@ from sqlmodel import Session
 from fastapi import HTTPException, status, Depends
 from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
-from .database import get_db
-from .models import User, UserBase
-from .schemas import TokenData
-from .core.security import SECRET_KEY, ALGORITHM
-from .crud.user_crud import read_one_user
+from app.database import get_db
+from app.models import User, UserBase
+from app.schemas import TokenData
+from app.core.security import SECRET_KEY, ALGORITHM
+from app.crud.user_crud import read_one_user
 
 
 oauth2_scheme_strict = OAuth2PasswordBearer(tokenUrl="auth/token")

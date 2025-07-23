@@ -1,5 +1,17 @@
 /.venv/
+llm_p_7/
 .env
 __pycache__/
 *.py[cod]
 *$py.class
+
+.db_storage/
+data/
+
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.md
+hf_cache
+transformers_cache

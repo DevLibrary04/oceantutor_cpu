@@ -3,8 +3,8 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict
 from sqlmodel import Session
 from fastapi.security import OAuth2PasswordRequestForm
-from ..crud import user_crud
-from ..core.security import pwd_context, SECRET_KEY, ALGORITHM
+from app.crud import user_crud
+from app.core.security import pwd_context, SECRET_KEY, ALGORITHM
 
 
 def verify_password(plain_password_from_front: str, hashed_password: str):

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from sqlmodel import Session, select
-from ..database import get_db
+from app.database import get_db
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types

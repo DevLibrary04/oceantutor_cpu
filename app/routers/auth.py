@@ -4,12 +4,12 @@ from fastapi import APIRouter, Depends, Request, HTTPException, Query
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlmodel import Session
-from ..core.config import settings
-from ..database import get_db
-from ..models import UserBase, User
-from ..services.user import register_one_user, sign_user_in, sign_google_user
-from ..dependencies import get_current_active_user
-from ..schemas import CreateUser, CreateUserResponse, Token
+from app.core.config import settings
+from app.database import get_db
+from app.models import UserBase, User
+from app.services.user import register_one_user, sign_user_in, sign_google_user
+from app.dependencies import get_current_active_user
+from app.schemas import CreateUser, CreateUserResponse, Token
 
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])

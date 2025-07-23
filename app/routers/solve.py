@@ -2,12 +2,12 @@ from typing import Annotated, Literal, Optional
 from fastapi import APIRouter, Depends, status, HTTPException
 from fastapi.responses import FileResponse
 from sqlmodel import Session
-from ..dependencies import get_optional_current_activate_user
-from ..core.config import settings
-from ..database import get_db
-from ..schemas import SolveResponse
-from ..models import GichulSetType, GichulSetInning, GichulSetGrade, ExamType, User
-from ..services.solve import retrieve_one_inning
+from app.dependencies import get_optional_current_activate_user
+from app.core.config import settings
+from app.database import get_db
+from app.schemas import SolveResponse
+from app.models import GichulSetType, GichulSetInning, GichulSetGrade, ExamType, User
+from app.services.solve import retrieve_one_inning
 
 router = APIRouter(prefix="/solve", tags=["Provide Gichul QnAs"])
 

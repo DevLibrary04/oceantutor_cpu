@@ -1,6 +1,6 @@
 from typing import Literal, Optional
 from sqlmodel import Session, select
-from ..models import (
+from app.models import (
     GichulSet,
     GichulSetType,
     GichulSetInning,

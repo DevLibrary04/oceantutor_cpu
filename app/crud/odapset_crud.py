@@ -1,9 +1,9 @@
 from typing import Annotated, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, SQLModel, Field, select
-from ..schemas import UserSolvedQna, UserBase
-from ..models import User, OdapSet, ExamType
-from .user_crud import read_one_user
+from app.schemas import UserSolvedQna, UserBase
+from app.models import User, OdapSet, ExamType
+from app.crud.user_crud import read_one_user
 
 
 def create_one_odapset(examtype: str, user_id: int, db: Session):

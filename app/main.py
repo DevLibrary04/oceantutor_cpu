@@ -1,12 +1,14 @@
+# main.py
+
 from fastapi import FastAPI
-from .routers import auth, solve, modelcall, cbt, odap
-from .schemas import RootResponse
+from app.routers import auth, solve, modelcall, cbt, odap
+from app.schemas import RootResponse
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Dict
-from .routers import auth, solve, modelcall, cbt, odap
-from .routers import rag as rag_router
-from .services.rag_service import rag_service
-
+from app.routers import auth, solve, modelcall, cbt, odap
+from app.routers import rag as rag_router
+# from app.routers.langserve_router import router as langserve_router
+# import uvicorn
 
 app = FastAPI(root_path="/api")
 
@@ -16,7 +18,12 @@ def on_startup():
     애플리케이션이 시작될 때 RAG 서비스를 초기화합니다.
     모델 로딩 등 무거운 작업은 이 시점에 한 번만 수행됩니다.
     """
-    rag_service.initialize()
+    from app.services.rag_service import get_rag_service
+
+    rag_service = get_rag_service()
+
+    rag_service.initialize()    # 모델 로딩
+    
     print("FastAPI application startup complete. All services are ready.")
 
 
@@ -41,6 +48,8 @@ app.include_router(odap.router)
 
 app.include_router(rag_router.router)
 
+# app.include_router(langserve_router)
+
 
 @app.get("/", response_model=RootResponse)
 def read_root():
@@ -48,3 +57,5 @@ def read_root():
         "message": "This is the GET method from the very root end.",
         "endpoints": "You can call /auth, /solve, /modelcall, /rag for practical features",
     }
+
+

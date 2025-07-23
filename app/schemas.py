@@ -1,7 +1,7 @@
 from typing import Optional, List, Literal, Dict
 from pydantic import BaseModel, EmailStr, ConfigDict
 from sqlmodel import SQLModel, Field
-from .models import GichulQnaBase, UserBase, OdapChoice
+from app.models import GichulQnaBase, UserBase, OdapChoice
 
 
 # main.py

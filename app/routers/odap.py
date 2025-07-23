@@ -1,10 +1,10 @@
 from typing import Annotated
 from fastapi import APIRouter, Depends
 from sqlmodel import Session
-from ..schemas import UserSolvedQna, ManyOdaps
-from ..dependencies import get_current_active_user
-from ..database import get_db
-from ..services.odap import (
+from app.schemas import UserSolvedQna, ManyOdaps
+from app.dependencies import get_current_active_user
+from app.database import get_db
+from app.services.odap import (
     save_user_solved_qna,
     save_user_solved_many_qnas,
     retrieve_user_saved_many_qnas,

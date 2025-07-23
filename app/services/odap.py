@@ -1,10 +1,10 @@
 from typing import Annotated, Optional
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, SQLModel, Field
-from ..schemas import UserSolvedQna, ManyOdaps
-from ..models import Odap, User
-from ..crud.user_crud import read_one_user
-from ..crud import odap_crud, odapset_crud
+from app.schemas import UserSolvedQna, ManyOdaps
+from app.models import Odap, User
+from app.crud.user_crud import read_one_user
+from app.crud import odap_crud, odapset_crud
 
 
 def save_user_solved_qna(odap_data: UserSolvedQna, current_user: User, db: Session):

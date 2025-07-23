@@ -1,6 +1,6 @@
 from typing import List
 from sqlmodel import Session, select
-from ..models import GichulSet, GichulSetType, GichulSetGrade
+from app.models import GichulSet, GichulSetType, GichulSetGrade
 
 
 def read_qna_sets(

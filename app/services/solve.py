@@ -1,10 +1,10 @@
 from typing import Literal, Optional
 from sqlmodel import Session
 from fastapi import HTTPException, status
-from ..models import GichulSetType, GichulSetInning, GichulSetGrade, ExamType, User
-from ..utils import solve_utils
-from ..crud import solve_crud, odapset_crud
-from ..schemas import SolveResponse, QnaWithImgPaths
+from app.models import GichulSetType, GichulSetInning, GichulSetGrade, ExamType, User
+from app.utils import solve_utils
+from app.crud import solve_crud, odapset_crud
+from app.schemas import SolveResponse, QnaWithImgPaths
 
 
 def retrieve_one_inning(

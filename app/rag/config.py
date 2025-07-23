@@ -9,7 +9,7 @@ DB_STORAGE_PATH = os.path.join(PROJECT_ROOT, '.db_storage')
 
 # 이 부분은 실제 데이터 위치에 맞게 수정해야 합니다.
 # 예: DATA_FOLDER = os.path.join(PROJECT_ROOT, "data")
-DATA_FOLDER = r'C:\Users\user\Downloads\20250721-20250721T013448Z-1-001\20250721\data'
+DATA_FOLDER = r'C:\Users\user\Desktop\tutor\bonproj_backend\data'
 MARKDOWN_FILE_PATH = os.path.join(DATA_FOLDER, "final_final_report.md")
 
 # ChromaDB 저장 경로

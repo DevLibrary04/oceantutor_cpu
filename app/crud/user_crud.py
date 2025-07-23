@@ -1,6 +1,6 @@
 from typing import Literal, Optional
 from sqlmodel import Session, select
-from ..models import User
+from app.models import User
 
 
 def read_one_user(

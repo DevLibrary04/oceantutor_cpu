@@ -1,6 +1,6 @@
 from typing import Dict, Any, List
-from ..core.config import settings
-from ..models import (
+from app.core.config import settings
+from app.models import (
     GichulSet,
     GichulSetType,
     GichulSetInning,

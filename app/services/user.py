@@ -5,12 +5,12 @@ from fastapi import HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
-from ..models import User
-from ..crud import user_crud
-from ..schemas import CreateUser, CreateUserResponse, Token
-from ..core.security import pwd_context, ACCESS_TOKEN_EXPIRE_MINUTES
-from ..core.config import settings
-from ..utils import user_utils
+from app.models import User
+from app.crud import user_crud
+from app.schemas import CreateUser, CreateUserResponse, Token
+from app.core.security import pwd_context, ACCESS_TOKEN_EXPIRE_MINUTES
+from app.core.config import settings
+from app.utils import user_utils
 
 
 google_client_id = settings.GOOGLE_CLIENT_ID

@@ -3,12 +3,12 @@ from typing import Annotated, List
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session, select
 from collections import defaultdict
-from ..dependencies import get_optional_current_activate_user
-from ..core.config import settings
-from ..utils.solve_utils import path_getter, dir_maker
-from ..schemas import CBTResponse
-from ..database import get_db
-from ..models import (
+from app.dependencies import get_optional_current_activate_user
+from app.core.config import settings
+from app.utils.solve_utils import path_getter, dir_maker
+from app.schemas import CBTResponse
+from app.database import get_db
+from app.models import (
     ExamType,
     OdapSet,
     User,
