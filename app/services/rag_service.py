@@ -257,7 +257,9 @@ class RAGService:
                 "uploaded_image_b64": image_b64,
                 "extracted_text": extracted_text
             }
-            print(f"--- [SERVICE 진단] 파이프라인으로 전달될 초기 상태(inputs)의 이미지 길이: {len(inputs.get('uploaded_image_b64', ''))} ---")
+            image_data = inputs.get('uploaded_image_b64')
+            image_length = len(image_data) if image_data is not None else 0
+            print(f"--- [SERVICE 진단] 파이프라인으로 전달될 초기 상태(inputs)의 이미지 길이: {image_length} ---")
             
             final_state = {}
             for output in self.rag_app.stream(inputs): 

@@ -22,8 +22,21 @@ rewrite_prompt = ChatPromptTemplate.from_messages([
                "Respond ONLY with the rewritten question."),
     ("human", "Here is the initial question:\n\n{question}\n\nRewritten question:"),
 ])
-
+# feedback: Optional[str] = None
 def create_generate_prompt(question: str, documents: List[Document], user_has_uploaded_image: bool, extracted_text: Optional[str]) -> str:
+    
+    # --- [새로 추가될 부분 시작] ---
+    # feedback이 실제로 존재할 때만 특별 지시사항을 만듭니다.
+#     feedback_instruction = ""
+#     if feedback:
+#         feedback_instruction = f"""
+# [ 중요! 이전 답변 수정 요청 ]
+# 이전 답변은 사용자의 요구를 충족하지 못했습니다. 아래 피드백을 반드시 반영하여 답변을 다시 생성해주세요.
+# 피드백: {feedback}
+# ----------------------------------
+
+# """
+    
     prompt_parts = ["""
 [ 페르소나 (당신의 역할) ]
 당신은 **'해기사 자격증(소형선박조종사, 항해사, 기관사)'** 및 관련 선박 운항 기술 지식에 특화된 전문 AI 교사입니다. 당신의 지식 범위는 이 주제에 한정됩니다.
@@ -46,11 +59,12 @@ def create_generate_prompt(question: str, documents: List[Document], user_has_up
 
 **2. 정보 종합 및 답변 생성 (Information Synthesis & Answer Generation):**
    - **[상황 1: 이미지가 제공된 경우]**
-     1. **핵심 파악:** OCR 텍스트를 보고 이미지의 주제(예: '마그네틱 컴퍼스')를 파악합니다.
-     2. **내용 찾기:** **데이터베이스에서 검색된 교재 내용(Retrieved Context)에서** OCR 텍스트에 나온 각 부품(예: '자침', '피벗')에 대한 공식적인 정의와 설명을 찾습니다.
+     1. **핵심 파악:** OCR 텍스트를 보고 이미지의 주제를 파악합니다.
+     2. **내용 찾기:** **데이터베이스에서 검색된 교재 내용(Retrieved Context)에서** OCR 텍스트에 나온 각 부품에 대한 공식적인 정의와 설명을 찾습니다.
      3. **답변 구성:** 아래 구조에 따라 교육적인 설명을 생성합니다.
         - **도입:** "제공된 이미지는 [이미지 주제]의 구조를 보여주는 그림입니다."
-        - **본문:** OCR 텍스트의 각 부품을 글머리 기호(*)로 나열하며, **검색된 교재 내용을 바탕으로** 각 부품의 역할과 기능을 상세히 설명합니다.
+        - **본문:** OCR 텍스트의 각 부품을 글머리 기호(*)로 나열하며, **검색된
+                     교재 내용을 바탕으로** 각 부품의 역할과 기능을 상세히 설명합니다.
         - **결론 (선택 사항):** 이 장치가 왜 중요한지 또는 시험에서 어떤 점을 유의해야 하는지 요약합니다.
 
    - **[상황 2: 텍스트 질문만 있는 경우]**
@@ -59,7 +73,8 @@ def create_generate_prompt(question: str, documents: List[Document], user_has_up
 [ 출력 규칙 및 제약사항 ]
 1. **정확성:** 반드시 검색된 교재 내용을 기반으로 답변해야 합니다. 추측하거나 없는 내용을 지어내지 마십시오.
 2. **언어 및 톤:** 항상 한국어로, 전문적이고 친절한 'AI 교사'의 톤을 유지해주세요.
-3. **구조적 답변:** 정보를 나열할 때는 글머리 기호(bullet points, *)나 번호를 사용하여 가독성을 높여주세요.
+3. **구조적 답변:** 정보를 나열할 때는 글머리 기호(bullet points, *)나 번호를 사용하여 가독성을 높여주세요. perplexity 같은 구조화 
+                    된 답변을 주세요.
 """
     ]
     
@@ -79,4 +94,8 @@ def create_generate_prompt(question: str, documents: List[Document], user_has_up
     prompt_parts.append(f"=== User's Question ===\n{question}\n")
     prompt_parts.append("=== Final Answer (in Korean) ===")
 
-    return "\n".join(prompt_parts)
+
+    final_prompt = "\n".join(prompt_parts)
+
+    return final_prompt
+    # return feedback_instruction + final_prompt

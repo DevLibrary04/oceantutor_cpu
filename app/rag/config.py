@@ -21,7 +21,7 @@ DEVICE = 'cuda'  # 'cuda' 또는 'cpu'
 TEXT_EMBEDDING_MODEL = "BAAI/bge-m3"
 IMAGE_EMBEDDING_MODEL = 'sentence-transformers/clip-ViT-B-32'
 RERANKER_MODEL = 'BAAI/bge-reranker-v2-m3'
-LLM_MODEL = "gemma3:4b" # Ollama에서 사용하는 모델 이름
+LLM_MODEL = "gemma3:12b" # Ollama에서 사용하는 모델 이름
 
 # --- RAG 파이프라인 파라미터 ---
 RELEVANCE_THRESHOLD = 0.2
