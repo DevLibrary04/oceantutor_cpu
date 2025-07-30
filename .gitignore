@@ -13,5 +13,10 @@ data/
 *.jpeg
 *.gif
 *.md
+*.txt
 hf_cache
 transformers_cache
+
+question_images/
+reference_images/
+clip/

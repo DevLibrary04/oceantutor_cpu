@@ -1,0 +1,9 @@
+# 데이터셋 루트 디렉토리 설정 (상대 경로)
+path: ./dataset
+train: images/train  # train 이미지 폴더 경로 (path 기준)
+val: images/val      # validation 이미지 폴더 경로 (path 기준)
+
+names:
+  0: pointer
+  1: arrow
+  2: target

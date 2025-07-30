@@ -14,6 +14,7 @@ from langchain_teddynote.tools.tavily import TavilySearch
 
 from fastapi.concurrency import run_in_threadpool
 from typing import Dict, Any, Optional, List
+\
 
 # 절대 경로 임포트로 변경하여 안정성 확보
 from app.rag import config
@@ -245,33 +246,32 @@ class RAGService:
             self._initialized = False
             raise
 
-    async def get_answer(self, question: str, image_b64: Optional[str], extracted_text: Optional[str]) -> Dict[str, Any]:
-        if not self._initialized or self.rag_app is None:
-            raise RuntimeError("RAG Service is not initialized. Check server startup logs.")
-        
-        print(f"--- [SERVICE 진단] get_answer 호출됨. image_b64 길이: {len(image_b64) if image_b64 else 0} ---")
-
-        def run_sync_pipeline() -> Dict[str, Any]:
-            inputs = {
-                "question": question, 
-                "uploaded_image_b64": image_b64,
-                "extracted_text": extracted_text
-            }
-            image_data = inputs.get('uploaded_image_b64')
-            image_length = len(image_data) if image_data is not None else 0
-            print(f"--- [SERVICE 진단] 파이프라인으로 전달될 초기 상태(inputs)의 이미지 길이: {image_length} ---")
+    async def get_answer(self, question: str, image_b64: Optional[str]) -> Dict[str, Any]: # <-- extracted_text 파라미터 제거
+            if not self._initialized or self.rag_app is None:
+                raise RuntimeError("RAG Service is not initialized. Check server startup logs.")
             
-            final_state = {}
-            for output in self.rag_app.stream(inputs): 
-                for key, value in output.items():
-                    logger.info(f"--- [RAG Service] Node '{key}' finished. ---")
-                final_state = output
-            return final_state
+            print(f"--- [Text RAG Service] get_answer 호출됨. ---")
 
-        logger.info("--- [RAG Service] Starting RAG pipeline in a separate thread... ---")
-        result = await run_in_threadpool(run_sync_pipeline)
-        logger.info("--- [RAG Service] RAG pipeline finished. ---")
-        return result
+            def run_sync_pipeline() -> Dict[str, Any]:
+                # ⭐⭐⭐ 파이프라인에 필요한 최소한의 재료만 전달합니다. ⭐⭐⭐
+                inputs = {
+                    "question": question, 
+                    "uploaded_image_b64": image_b64,
+                }
+                
+                final_generation = None
+                for output in self.rag_app.stream(inputs): 
+                    for key, value in output.items():
+                        logger.info(f"--- [Text RAG Service] Node '{key}' finished. ---")
+                        if key == "generate":
+                            final_generation = value
+                
+                return final_generation if final_generation is not None else {}
+
+            logger.info("--- [Text RAG Service] Starting RAG pipeline in a separate thread... ---")
+            result = await run_in_threadpool(run_sync_pipeline)
+            logger.info("--- [Text RAG Service] RAG pipeline finished. ---")
+            return result
 
 def get_rag_service() -> RAGService:
     global _rag_service_instance

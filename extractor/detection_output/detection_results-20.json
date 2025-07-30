@@ -1,0 +1,362 @@
+{
+  "pointers": [
+    {
+      "id": "pointer_0",
+      "class": "pointer",
+      "confidence": 0.513,
+      "box": [
+        640,
+        247,
+        701,
+        283
+      ],
+      "text": "자침",
+      "text_confidence": 0.976
+    },
+    {
+      "id": "pointer_1",
+      "class": "pointer",
+      "confidence": 0.405,
+      "box": [
+        45,
+        383,
+        133,
+        415
+      ],
+      "text": "아랫방",
+      "text_confidence": 0.713
+    },
+    {
+      "id": "pointer_2",
+      "class": "pointer",
+      "confidence": 0.337,
+      "box": [
+        620,
+        418,
+        652,
+        452
+      ],
+      "text": "액",
+      "text_confidence": 1.0
+    },
+    {
+      "id": "pointer_3",
+      "class": "pointer",
+      "confidence": 0.305,
+      "box": [
+        193,
+        96,
+        253,
+        134
+      ],
+      "text": "피넷",
+      "text_confidence": 0.352
+    },
+    {
+      "id": "pointer_4",
+      "class": "pointer",
+      "confidence": 0.275,
+      "box": [
+        601,
+        367,
+        691,
+        403
+      ],
+      "text": "주액구",
+      "text_confidence": 0.991
+    },
+    {
+      "id": "pointer_5",
+      "class": "pointer",
+      "confidence": 0.225,
+      "box": [
+        314,
+        498,
+        403,
+        534
+      ],
+      "text": "연결관",
+      "text_confidence": 1.0
+    },
+    {
+      "id": "pointer_6",
+      "class": "pointer",
+      "confidence": 0.14,
+      "box": [
+        93,
+        429,
+        185,
+        466
+      ],
+      "text": "공기부",
+      "text_confidence": 0.961
+    },
+    {
+      "id": "pointer_7",
+      "class": "pointer",
+      "confidence": 0.128,
+      "box": [
+        87,
+        79,
+        149,
+        113
+      ],
+      "text": "기선",
+      "text_confidence": 1.0
+    },
+    {
+      "id": "pointer_8",
+      "class": "pointer",
+      "confidence": 0.12,
+      "box": [
+        601,
+        0,
+        690,
+        32
+      ],
+      "text": "짐벌즈",
+      "text_confidence": 0.631
+    },
+    {
+      "id": "pointer_9",
+      "class": "pointer",
+      "confidence": 0.104,
+      "box": [
+        286,
+        24,
+        462,
+        59
+      ],
+      "text": "새도 팬 꽂이",
+      "text_confidence": 0.648
+    },
+    {
+      "id": "pointer_10",
+      "class": "pointer",
+      "confidence": 0.096,
+      "box": [
+        446,
+        66,
+        505,
+        99
+      ],
+      "text": "부실",
+      "text_confidence": 0.638
+    },
+    {
+      "id": "pointer_11",
+      "class": "pointer",
+      "confidence": 0.066,
+      "box": [
+        275,
+        69,
+        306,
+        103
+      ],
+      "text": "캠",
+      "text_confidence": 0.82
+    }
+  ],
+  "arrows": [
+    {
+      "id": "arrow_0",
+      "class": "arrow",
+      "confidence": 0.883,
+      "box": [
+        363,
+        67,
+        381,
+        122
+      ]
+    },
+    {
+      "id": "arrow_1",
+      "class": "arrow",
+      "confidence": 0.405,
+      "box": [
+        348,
+        420,
+        366,
+        489
+      ]
+    },
+    {
+      "id": "arrow_2",
+      "class": "arrow",
+      "confidence": 0.378,
+      "box": [
+        126,
+        349,
+        237,
+        384
+      ]
+    },
+    {
+      "id": "arrow_3",
+      "class": "arrow",
+      "confidence": 0.335,
+      "box": [
+        130,
+        121,
+        189,
+        208
+      ]
+    },
+    {
+      "id": "arrow_4",
+      "class": "arrow",
+      "confidence": 0.31,
+      "box": [
+        414,
+        103,
+        473,
+        192
+      ]
+    },
+    {
+      "id": "arrow_5",
+      "class": "arrow",
+      "confidence": 0.305,
+      "box": [
+        308,
+        107,
+        359,
+        171
+      ]
+    },
+    {
+      "id": "arrow_6",
+      "class": "arrow",
+      "confidence": 0.297,
+      "box": [
+        262,
+        122,
+        336,
+        205
+      ]
+    },
+    {
+      "id": "arrow_7",
+      "class": "arrow",
+      "confidence": 0.207,
+      "box": [
+        478,
+        128,
+        531,
+        206
+      ]
+    },
+    {
+      "id": "arrow_8",
+      "class": "arrow",
+      "confidence": 0.201,
+      "box": [
+        623,
+        313,
+        652,
+        359
+      ]
+    },
+    {
+      "id": "arrow_9",
+      "class": "arrow",
+      "confidence": 0.072,
+      "box": [
+        509,
+        398,
+        612,
+        429
+      ]
+    }
+  ],
+  "target_objects": [
+    {
+      "id": "target_object_0",
+      "class": "target",
+      "confidence": 0.54,
+      "box": [
+        640,
+        204,
+        679,
+        230
+      ]
+    },
+    {
+      "id": "target_object_1",
+      "class": "target",
+      "confidence": 0.382,
+      "box": [
+        221,
+        375,
+        526,
+        443
+      ]
+    },
+    {
+      "id": "target_object_2",
+      "class": "target",
+      "confidence": 0.275,
+      "box": [
+        160,
+        218,
+        360,
+        299
+      ]
+    },
+    {
+      "id": "target_object_3",
+      "class": "target",
+      "confidence": 0.196,
+      "box": [
+        361,
+        175,
+        384,
+        215
+      ]
+    },
+    {
+      "id": "target_object_4",
+      "class": "target",
+      "confidence": 0.101,
+      "box": [
+        237,
+        331,
+        568,
+        368
+      ]
+    },
+    {
+      "id": "target_object_5",
+      "class": "target",
+      "confidence": 0.1,
+      "box": [
+        68,
+        205,
+        106,
+        232
+      ]
+    },
+    {
+      "id": "target_object_6",
+      "class": "target",
+      "confidence": 0.066,
+      "box": [
+        432,
+        222,
+        590,
+        270
+      ]
+    },
+    {
+      "id": "target_object_7",
+      "class": "target",
+      "confidence": 0.055,
+      "box": [
+        276,
+        20,
+        473,
+        66
+      ]
+    }
+  ]
+}
