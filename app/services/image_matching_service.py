@@ -1,14 +1,12 @@
-# app/services/image_matching_service.py (스케일 보정 매핑 최종 버전)
-
 import os
 import tempfile
 import cv2
 import numpy as np
 from PIL import Image
 from typing import Dict, List, Tuple, Optional
-from llama_index.embeddings.clip import ClipEmbedding
+
+import imagehash
 from ultralytics import YOLO
-from sklearn.metrics.pairwise import cosine_similarity
 import logging
 
 from app.rag import config
@@ -16,60 +14,65 @@ from app.ocr_service import get_ocr_reader
 
 logger = logging.getLogger(__name__)
 
-# --- 1. EnhancedImageRAG (기존과 동일) ---
-class EnhancedImageRAG:
-    def __init__(self, embed_model, reference_dir: str):
-        self.embed_model = embed_model
+class ImageHasher:
+    def __init__(self, reference_dir: str, distance_threshold: int):
+        self.ref_hashes: Dict[str, imagehash.ImageHash] = {}
         self.reference_dir = reference_dir
-        self.ref_embeddings: Dict[str, List[float]] = {}
+        self.distance_threshold = distance_threshold
 
-    def cache_reference_embeddings(self):
-        logger.info("[Image RAG] 참조 이미지 임베딩 캐싱 시작...")
+    def cache_reference_hashes(self):
+        logger.info("[Image Matcher] 참조 이미지 pHash 캐싱 시작...")
         if not os.path.isdir(self.reference_dir):
             logger.error(f"참조 이미지 디렉토리를 찾을 수 없습니다: {self.reference_dir}")
             return
+        
         for filename in os.listdir(self.reference_dir):
             if filename.lower().endswith(('.png', '.jpg', '.jpeg')):
                 path = os.path.join(self.reference_dir, filename)
                 try:
-                    embedding = self.embed_model.get_image_embedding(path)
-                    self.ref_embeddings[path] = embedding
-                    logger.info(f"  -> 임베딩 완료: {filename}")
+                    img = Image.open(path)
+                    h = imagehash.phash(img)
+                    self.ref_hashes[path] = h
+                    logger.info(f"  -> pHash 캐싱 완료: {filename} (hash: {h})")
+
                 except Exception as e:
                     logger.error(f"참조 이미지 임베딩 실패 ({filename}): {e}")
-        logger.info(f"[Image RAG] {len(self.ref_embeddings)}개의 참조 이미지 임베딩 캐싱 완료.")
+        logger.info(f"[Image Matcher] {len(self.ref_hashes)}개의 참조 이미지 pHash 캐싱 완료.")
 
-    def find_best_match(self, query_image_path: str, similarity_threshold: float = 0.7) -> Optional[Tuple[str, float]]:
-        if not self.ref_embeddings:
-            logger.warning("[Image RAG] 참조 이미지 임베딩 캐시가 비어있습니다.")
+    def find_best_match(self, query_image_path: str) -> Optional[Tuple[str, int]]:
+        if not self.ref_hashes:
+            logger.warning("[Image Matcher] 참조 이미지 해시 캐시가 비어있습니다.")
             return None
         try:
-            query_embedding = self.embed_model.get_image_embedding(query_image_path)
+            query_img = Image.open(query_image_path)
+            query_hash = imagehash.phash(query_img)
         except Exception as e:
-            logger.error(f"쿼리 이미지 임베딩 실패: {e}")
+            logger.error(f"쿼리 이미지 pHash 계산 실패: {e}")
             return None
-        similarities = []
-        for ref_path, ref_embedding in self.ref_embeddings.items():
-            sim = cosine_similarity([query_embedding], [ref_embedding])[0][0]
-            similarities.append((ref_path, float(sim)))
-        if not similarities:
+        
+        distances = []
+        for ref_path, ref_hash in self.ref_hashes.items():
+            dist = query_hash - ref_hash
+            distances.append((ref_path, dist))
+            
+        if not distances:
             return None
-        similarities.sort(key=lambda x: x[1], reverse=True)
-        best_match = similarities[0]
-        if best_match[1] < similarity_threshold:
-            logger.warning(f"가장 유사한 이미지의 유사도가 낮음: {best_match[1]:.3f} < {similarity_threshold}")
+        
+        distances.sort(key=lambda x: x[1])
+        best_match_path, best_distance = distances[0]
+        
+        if best_distance > self.distance_threshold:
+            logger.warning(f"가장 유사한 이미지의 유사도가 낮음: {best_distance} < {self.distance_threshold}")
             return None
-        logger.info(f"  -> 최적 매치: {os.path.basename(best_match[0])} (유사도: {best_match[1]:.3f})")
-        return best_match
+        logger.info(f"  -> 최적 매치: {os.path.basename(best_match_path)} (해밍 거리): {best_distance})")
+        return best_match_path, best_distance
 
 
-# --- 2. ObjectDetectorMapper (신형 터보 엔진으로 교체된 버전) ---
 class ObjectDetectorMapper:
     def __init__(self, yolo_model, ocr_reader):
         self.yolo = yolo_model
         self.ocr_reader = ocr_reader
 
-    # 포인터 탐지 로직 (기존과 동일)
     def find_pointer_box(self, image_np: np.ndarray) -> Optional[List[int]]:
         logger.info("  -> 1. YOLO로 포인터 탐색 시도...")
         results = self.yolo(image_np, conf=0.05, iou=0.45, verbose=False)
@@ -149,23 +152,20 @@ class ObjectDetectorMapper:
         union_area = box1_area + box2_area - inter_area
         return inter_area / float(union_area) if union_area > 0 else 0.0
 
-    # ▼▼▼ 신형 터보 엔진 및 특수 공구 세트 이식 시작 ▼▼▼
-    
     def map_pointer_to_reference(self, question_image_np: np.ndarray, reference_image_path: str,
                                  pointer_box: List[int], scale_factor: float = 1.0, debug_save: bool = True) -> str:
-        """개선된 포인터 위치 매핑 (스케일 차이 고려)"""
         ref_image_color = cv2.imread(reference_image_path)
         if ref_image_color is None:
             return "매핑 실패 (참조 이미지 로드 불가)"
 
-        # ⭐ 핵심 1: 이미지들을 매칭에 적합한 크기로 각각 리사이즈
+        # 1. 리사이즈
         q_resized, q_scale = self._resize_question_image(question_image_np)
         ref_resized, ref_scale = self._resize_reference_image(ref_image_color, q_resized.shape[:2])
 
         q_gray = cv2.cvtColor(q_resized, cv2.COLOR_BGR2GRAY)
         ref_gray = cv2.cvtColor(ref_resized, cv2.COLOR_BGR2GRAY)
 
-        # ⭐ 핵심 2: 포인터 좌표도 매칭용 이미지의 스케일에 맞게 조정
+        # 2. 포인터 좌표도 매칭용 이미지의 스케일에 맞게 조정
         # `pointer_box`는 `question_image_np` 기준 좌표이므로, `q_scale`을 곱해 `q_resized` 기준 좌표로 변환
         adjusted_pointer_box = [int(coord * q_scale) for coord in pointer_box]
         
@@ -184,7 +184,7 @@ class ObjectDetectorMapper:
                 transformed_center_3d = cv2.perspectiveTransform(q_center_3d, M)
                 transformed_center = tuple(map(int, transformed_center_3d[0][0]))
 
-                # ⭐ 핵심 3: 변환된 좌표를 '원본' 참조 이미지 크기로 최종 스케일업
+                # 3: 변환된 좌표를 '원본' 참조 이미지 크기로 최종 스케일업
                 original_transformed_center = (
                     int(transformed_center[0] / ref_scale),
                     int(transformed_center[1] / ref_scale)
@@ -212,7 +212,7 @@ class ObjectDetectorMapper:
             logger.error(f"매핑 처리 중 오류: {e}", exc_info=True)
             return f"매핑 실패 (내부 오류: {e})"
 
-    # --- 아래는 신형 엔진의 특수 공구들 (헬퍼 함수) ---
+    # --- (헬퍼 함수) ---
 
     def _resize_question_image(self, image: np.ndarray, target_size: int = 1024) -> Tuple[np.ndarray, float]:
         """질문 이미지를 매칭용 표준 크기로 리사이즈"""
@@ -359,10 +359,8 @@ class ObjectDetectorMapper:
         except Exception as e:
             logger.warning(f"디버그 이미지 저장 실패: {e}")
 
-    # ▲▲▲ 신형 터보 엔진 및 특수 공구 세트 이식 끝 ▲▲▲
 
-
-# --- 3. 통합 서비스 (Singleton, 기존과 동일) ---
+# --- 3. 통합 서비스 (Singleton) ---
 class ImageMatchingService:
     _instance = None
     _initialized = False
@@ -377,15 +375,20 @@ class ImageMatchingService:
         if self._initialized: return
         logger.info("--- ImageMatchingService 초기화 시작 ---")
         try:
-            self.clip_embedding = ClipEmbedding(model_name="ViT-B/32")
-            logger.info("  -> CLIP 임베딩 모델 로딩 완료")
-            self.image_rag = EnhancedImageRAG(self.clip_embedding, config.REFERENCE_IMAGES_DIR)
-            self.image_rag.cache_reference_embeddings()
+            
+            self.image_hasher = ImageHasher(
+                reference_dir=config.REFERENCE_IMAGES_DIR,
+                distance_threshold=config.PHASH_DISTANCE_THRESHOLD
+            )
+            self.image_hasher.cache_reference_hashes()
+            
+            # 욜로, OCR 초기화
             yolo_model = YOLO(config.YOLO_MODEL_PATH)
             logger.info(f"  -> YOLO 모델 로딩 완료: {config.YOLO_MODEL_PATH}")
             ocr_reader = get_ocr_reader()
             logger.info("  -> OCR 리더 초기화 완료")
             self.mapper = ObjectDetectorMapper(yolo_model, ocr_reader)
+            
             self._initialized = True
             logger.info("--- ImageMatchingService 초기화 완료 ---")
         except Exception as e:
@@ -453,8 +456,10 @@ class ImageMatchingService:
     def get_service_status(self) -> Dict:
         return {
             "initialized": self._initialized,
-            "reference_images_count": len(self.image_rag.ref_embeddings) if self._initialized else 0,
+            "match_method": "pHash",
+            "reference_images_count": len(self.image_hasher.ref_hashes) if self._initialized else 0,
             "reference_dir": config.REFERENCE_IMAGES_DIR if self._initialized else None,
+            "distance_threshold": config.PHASH_DISTANCE_THRESHOLD if self._initialized else None,
         }
 
 def get_image_matching_service() -> ImageMatchingService:
