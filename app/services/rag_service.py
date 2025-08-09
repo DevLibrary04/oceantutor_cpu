@@ -1,7 +1,4 @@
-# app/services/rag_service.py
-
 import os
-import shutil
 import logging
 import time
 from dotenv import load_dotenv
@@ -9,11 +6,12 @@ from dotenv import load_dotenv
 from langchain_chroma import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
 from sentence_transformers import CrossEncoder
-from langchain_ollama import ChatOllama
-from langchain_teddynote.tools.tavily import TavilySearch
+# from langchain_ollama import ChatOllama
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_community.tools.tavily_search import TavilySearchResults
 
 from fastapi.concurrency import run_in_threadpool
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional
 \
 
 # 절대 경로 임포트로 변경하여 안정성 확보
@@ -44,16 +42,17 @@ class RAGService:
             logger.info(f"{model_type} 임베딩 모델 로딩 시작: {model_name}")
             
             # HuggingFace 캐시 디렉토리 설정
-            os.environ['HF_HOME'] = './hf_cache'
-            os.environ['TRANSFORMERS_CACHE'] = './transformers_cache'
-            os.environ['TOKENIZERS_PARALLELISM'] = 'false'
+            # os.environ['HF_HOME'] = './hf_cache'
+            # os.environ['TRANSFORMERS_CACHE'] = './transformers_cache'
+            # os.environ['TOKENIZERS_PARALLELISM'] = 'false'
             
             model_kwargs = {
                 'device': device,
                 'trust_remote_code': True
             }
             
-            encode_kwargs = {'normalize_embeddings': True} if model_type == "text" else {}
+            encode_kwargs = {'normalize_embeddings': True if model_type == "text" else False,
+                             'batch_size': 8}  # 32, 16, 8
             
             embedding = HuggingFaceEmbeddings(
                 model_name=model_name,
@@ -88,6 +87,8 @@ class RAGService:
             # --- [수정 1] 모델 로딩을 먼저 수행합니다 ---
             # DB 생성에 필요한 임베딩 모델을 먼저 준비합니다.
             logger.info(f"텍스트 임베딩 모델 로딩 시작: {config.TEXT_EMBEDDING_MODEL}")
+            
+            
             self.text_embedding = self._load_embedding_model_safe(
                 config.TEXT_EMBEDDING_MODEL,
                 config.DEVICE,
@@ -133,52 +134,6 @@ class RAGService:
             
             # 이미지 벡터스토어는 이제 사용하지 않으므로 None으로 고정
             image_vectorstore = None
-
-
-
-            #     shutil.rmtree(config.TEXT_DB_PATH)
-            # if os.path.exists(config.IMAGE_DB_PATH): 
-            #     shutil.rmtree(config.IMAGE_DB_PATH)
-            # logger.info(f"디렉토리 설정 완료 ({time.time() - start_time:.2f}초)")
-
-            # 2. 문서 로딩
-            # start_time = time.time()
-            # logger.info("문서 로딩 시작...")
-            # text_docs, image_docs = load_markdown_documents(config.MARKDOWN_FILE_PATH)
-            # logger.info(f"문서 로딩 완료 ({time.time() - start_time:.2f}초)")
-            
-            # 3. 텍스트 임베딩 모델 로딩
-            # start_time = time.time()
-            # logger.info(f"텍스트 임베딩 모델 로딩 시작: {config.TEXT_EMBEDDING_MODEL}")
-        
-            # self.text_embedding = self._load_embedding_model_safe(
-            #         config.TEXT_EMBEDDING_MODEL,
-            #         config.DEVICE,
-            #         "text"
-            # )
-            # if not self.text_embedding:
-            #     raise RuntimeError("텍스트 임베딩 모델 로딩에 실패하였습니다.")
-                # text_embedding = HuggingFaceEmbeddings(
-                #     model_name=config.TEXT_EMBEDDING_MODEL, 
-                #     model_kwargs={
-                #         'device': config.DEVICE,
-                #         'trust_remote_code': True  # 필요한 경우
-                #     },
-                #     encode_kwargs={'normalize_embeddings': True}
-                # )
-                # logger.info(f"텍스트 임베딩 모델 로딩 완료 ({time.time() - start_time:.2f}초)")
-
-
-            # 4. 이미지 임베딩 모델 로딩 (필요한 경우)
-            # image_embedding = None
-            # if hasattr(config, 'IMAGE_EMBEDDING_MODEL') and config.IMAGE_EMBEDDING_MODEL:
-            #     self.image_embedding = self._load_embedding_model_safe(
-            #         config.IMAGE_EMBEDDING_MODEL,
-            #         config.DEVICE,
-            #         "image"
-            #     )
-            #     if not self.image_embedding:
-            #         raise RuntimeError("이미지 임베딩 모델 로딩에 실패하였습니다. 텍스트만으로 진행합니다.")
             
             # 5. Reranker 모델 로딩
             start_time = time.time()
@@ -191,38 +146,26 @@ class RAGService:
                 raise
             
             # 6. LLM 및 웹 검색 도구 초기화
-            start_time = time.time()
             logger.info("LLM 및 웹 검색 도구 초기화 중...")
-            llm = ChatOllama(model=config.LLM_MODEL, temperature=0)
-            web_search_tool = TavilySearch(max_results=3)
+            start_time = time.time()
+            
+            # llm = ChatOllama(model=config.LLM_MODEL, temperature=0)
+            
+            google_api_key = os.getenv("GOOGLE_API_KEY")
+            if not google_api_key:
+                raise ValueError("GOOGLE_API_KEY 환경변수를 찾을 수 없습니다. 다시 확인 해주세요.")
+            
+            llm = ChatGoogleGenerativeAI(
+                model=config.LLM_MODEL, 
+                google_api_key=google_api_key,
+                temperature=0, 
+                convert_system_message_to_human=True)
+            
+            web_search_tool = TavilySearchResults(max_results=3)
             logger.info(f"LLM 및 웹 검색 도구 초기화 완료 ({time.time() - start_time:.2f}초)")
-            
-            # 7. 벡터스토어 생성
-            # start_time = time.time()
-            # logger.info("텍스트 벡터스토어 생성 중...")
-            # text_vectorstore = Chroma.from_documents(
-            #     documents=text_docs, 
-            #     embedding=self.text_embedding,
-            #     persist_directory=config.TEXT_DB_PATH, 
-            #     ids=[d.metadata['id'] for d in text_docs]
-            # )
-            # logger.info(f"텍스트 벡터스토어 생성 완료 ({time.time() - start_time:.2f}초)")
-            
-            # image_vectorstore = None
-            # if image_docs and self.image_embedding:
-            #     start_time = time.time()
-            #     logger.info("이미지 벡터스토어 생성 중...")
-            #     image_vectorstore = Chroma.from_documents(
-            #         documents=image_docs, 
-            #         embedding=self.image_embedding,
-            #         persist_directory=config.IMAGE_DB_PATH, 
-            #         ids=[d.metadata['id'] for d in image_docs]
-            #     )
-            #     logger.info(f"이미지 벡터스토어 생성 완료 ({time.time() - start_time:.2f}초)")
 
             # 8. RAG 앱 빌드
-            start_time = time.time()
-            logger.info("RAG 파이프라인 빌드 중...")
+            logger.info(". . .RAG 파이프라인 빌드 중. . .")
             rag_config_params = {
                 "RELEVANCE_THRESHOLD": config.RELEVANCE_THRESHOLD,
                 "SIMILARITY_SEARCH_K": config.SIMILARITY_SEARCH_K,
@@ -231,8 +174,11 @@ class RAGService:
             }
             
             self.rag_app = build_rag_app(
-                llm, reranker, text_vectorstore, image_vectorstore, 
-                web_search_tool, rag_config_params
+                llm, 
+                reranker, 
+                text_vectorstore, 
+                web_search_tool, 
+                rag_config_params
             )
             logger.info(f"RAG 파이프라인 빌드 완료 ({time.time() - start_time:.2f}초)")
             
@@ -244,7 +190,7 @@ class RAGService:
             import traceback
             traceback.print_exc()
             self._initialized = False
-            raise
+            raise RuntimeError(f"RAG Service 초기화 실패: {e}")
 
     async def get_answer(self, question: str, image_b64: Optional[str]) -> Dict[str, Any]: # <-- extracted_text 파라미터 제거
             if not self._initialized or self.rag_app is None:

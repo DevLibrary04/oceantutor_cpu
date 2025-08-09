@@ -19,6 +19,10 @@ def on_startup():
     from app.services.rag_service import get_rag_service
     rag_service = get_rag_service()
     rag_service.initialize()
+    
+    
+    
+    
 
     # [추가] 신규 이미지 매칭 서비스 초기화
     from app.services.image_matching_service import get_image_matching_service

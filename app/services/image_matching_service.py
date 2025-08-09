@@ -4,8 +4,8 @@ import cv2
 import numpy as np
 from PIL import Image
 from typing import Dict, List, Tuple, Optional
-
 import imagehash
+import base64
 from ultralytics import YOLO
 import logging
 
@@ -15,58 +15,82 @@ from app.ocr_service import get_ocr_reader
 logger = logging.getLogger(__name__)
 
 class ImageHasher:
-    def __init__(self, reference_dir: str, distance_threshold: int):
+    def __init__(self, reference_dir: str, problem_dir: str, distance_threshold: int):
+        # 클래스 변수 초기화 : 문제와 정답 해시
         self.ref_hashes: Dict[str, imagehash.ImageHash] = {}
+        self.problem_hashes: Dict[str, imagehash.ImageHash] = {}
+        
+        # 디렉터리 경로 저장
+        self.problem_dir = problem_dir
         self.reference_dir = reference_dir
         self.distance_threshold = distance_threshold
-
-    def cache_reference_hashes(self):
-        logger.info("[Image Matcher] 참조 이미지 pHash 캐싱 시작...")
-        if not os.path.isdir(self.reference_dir):
-            logger.error(f"참조 이미지 디렉토리를 찾을 수 없습니다: {self.reference_dir}")
-            return
         
-        for filename in os.listdir(self.reference_dir):
-            if filename.lower().endswith(('.png', '.jpg', '.jpeg')):
-                path = os.path.join(self.reference_dir, filename)
+        # 매핑(문제 -> 정답이미지)을 저장할 변수
+        self.problem_to_ref_map: Dict[str, str] = {}
+
+    def cache_hashes(self):
+        logger.info("[Image Matcher] 정답 이미지 매칭 중. . .")
+        ref_img_path = {os.path.splitext(f)[0]: os.path.join(self.reference_dir, f) for f in os.listdir(self.reference_dir)}
+        
+        for root, _, files in os.walk(self.problem_dir):
+            category_name = os.path.basename(root)
+            
+            category_ref_path = ref_img_path.get(category_name)
+            
+            if not category_ref_path:
+                continue
+            
+            for filename in files:
+                problem_path = os.path.join(root, filename)
+                self.problem_to_ref_map[problem_path] = category_ref_path
+                # self.problem_hashes[problem_path] = imagehash.phash(...)
                 try:
-                    img = Image.open(path)
-                    h = imagehash.phash(img)
-                    self.ref_hashes[path] = h
-                    logger.info(f"  -> pHash 캐싱 완료: {filename} (hash: {h})")
-
+                    if filename.lower().endswith(('.png', '.jpg', '.jpeg')):
+                        img = Image.open(problem_path)
+                        self.problem_hashes[problem_path] = imagehash.phash(img)
                 except Exception as e:
-                    logger.error(f"참조 이미지 임베딩 실패 ({filename}): {e}")
-        logger.info(f"[Image Matcher] {len(self.ref_hashes)}개의 참조 이미지 pHash 캐싱 완료.")
+                    logger.error(f"문제이미지 phash계산 실패 '{problem_path}': {e}")
+        
+        logger.info(f"{len(self.problem_hashes)}개의 문제이미지 pHash 캐싱 및 카테고리 매핑 완료")
+        logger.info("[Image Hasher] 초기화 완료")                    
 
-    def find_best_match(self, query_image_path: str) -> Optional[Tuple[str, int]]:
-        if not self.ref_hashes:
-            logger.warning("[Image Matcher] 참조 이미지 해시 캐시가 비어있습니다.")
+    def find_best_match_category(self, query_image_path: str) -> Optional[Tuple[str, int]]:
+        """
+        업로드된 이미지와 가장 유사한 '기출문제 이미지'를 찾고,
+        그 이미지가 속한 카테고리의 '정답(교재) 이미지'를 반환합니다.
+        """
+        if not self.problem_hashes:
+            logger.warning("[Image Matcher] 문제 이미지 해시 캐시가 비어있습니다.")
             return None
         try:
-            query_img = Image.open(query_image_path)
-            query_hash = imagehash.phash(query_img)
+            query_hash = imagehash.phash(Image.open(query_image_path))
         except Exception as e:
             logger.error(f"쿼리 이미지 pHash 계산 실패: {e}")
             return None
         
-        distances = []
-        for ref_path, ref_hash in self.ref_hashes.items():
-            dist = query_hash - ref_hash
-            distances.append((ref_path, dist))
-            
-        if not distances:
+        # 1. 기출문제 이미지 찾기
+        min_dist = float('inf')
+        best_problem_match_path = None
+        for problem_path, problem_hash in self.problem_hashes.items():
+            dist = query_hash - problem_hash
+            if dist < min_dist:
+                min_dist = dist
+                best_problem_match_path = problem_path
+        
+        if min_dist > self.distance_threshold:
+            logger.warning(f"유사도로 찾은 기출이미지의 거리가 임계값보다 큽니다: {min_dist} > {self.distance_threshold}")
             return None
         
-        distances.sort(key=lambda x: x[1])
-        best_match_path, best_distance = distances[0]
+        logger.info(f"최적 문제 이미지 매칭: {os.path.basename(best_problem_match_path)} (해밍 거리 : {min_dist})")
+        # 2. 매칭된 정답이미지를 조회한다
+        final_ref_path = self.problem_to_ref_map.get(best_problem_match_path)
         
-        if best_distance > self.distance_threshold:
-            logger.warning(f"가장 유사한 이미지의 유사도가 낮음: {best_distance} < {self.distance_threshold}")
+        if final_ref_path:
+            logger.info(f"최종 정답지(카테고리) 매칭 성공: {os.path.basename(final_ref_path)}")
+            return final_ref_path, min_dist
+        else:
+            logger.error(f"매핑 오류: '{best_problem_match_path}'에 해당하는 정답지를 찾을 수 없습니다.")
             return None
-        logger.info(f"  -> 최적 매치: {os.path.basename(best_match_path)} (해밍 거리): {best_distance})")
-        return best_match_path, best_distance
-
 
 class ObjectDetectorMapper:
     def __init__(self, yolo_model, ocr_reader):
@@ -360,11 +384,10 @@ class ObjectDetectorMapper:
             logger.warning(f"디버그 이미지 저장 실패: {e}")
 
 
-# --- 3. 통합 서비스 (Singleton) ---
+# --- 3. ImageMatchingService (싱글턴 통합 서비스) ---
 class ImageMatchingService:
     _instance = None
     _initialized = False
-    
 
     def __new__(cls, *args, **kwargs):
         if cls._instance is None:
@@ -372,15 +395,17 @@ class ImageMatchingService:
         return cls._instance
 
     def initialize(self):
-        if self._initialized: return
+        if self._initialized: 
+            return
+        
         logger.info("--- ImageMatchingService 초기화 시작 ---")
         try:
-            
             self.image_hasher = ImageHasher(
+                problem_dir=config.PROBLEM_IMAGES_DIR,
                 reference_dir=config.REFERENCE_IMAGES_DIR,
                 distance_threshold=config.PHASH_DISTANCE_THRESHOLD
             )
-            self.image_hasher.cache_reference_hashes()
+            self.image_hasher.cache_hashes()
             
             # 욜로, OCR 초기화
             yolo_model = YOLO(config.YOLO_MODEL_PATH)
@@ -398,61 +423,53 @@ class ImageMatchingService:
     def _resize_image_for_processing(self, image_np: np.ndarray, max_width: int = 1024, max_height: int = 768) -> Tuple[np.ndarray, float]:
         """이미지 크기를 일반 처리에 맞게 조정하고 스케일 팩터를 반환"""
         h, w = image_np.shape[:2]
-        if w <= max_width and h <= max_height: return image_np, 1.0
+        if w <= max_width and h <= max_height: 
+            return image_np, 1.0
         scale = min(max_width / w, max_height / h)
         new_width, new_height = int(w * scale), int(h * scale)
         resized = cv2.resize(image_np, (new_width, new_height), interpolation=cv2.INTER_AREA)
         logger.info(f"  -> 이미지 리사이즈 (처리용): {w}x{h} -> {new_width}x{new_height} (스케일: {scale:.3f})")
         return resized, scale
 
-    def find_keyword_from_image(self, image_bytes: bytes) -> str:
+    def match_reference_image(self, image_bytes: bytes) -> Optional[str]:
+        """사용자가 첨부한 이미지와 매핑된 정답이미지의 base64를 반환"""
         if not self._initialized:
-            raise RuntimeError("ImageMatchingService가 초기화되지 않았습니다.")
+            raise RuntimeError("ImageMatchingService가 초기화 되지 않았습니다.")
+        
         temp_file_path = ""
+        
         try:
             with tempfile.NamedTemporaryFile(delete=False, suffix=".png", dir=config.TEMP_UPLOAD_DIR) as tmp:
                 tmp.write(image_bytes)
                 temp_file_path = tmp.name
+            logger.info(f"[Image Match] 카테고리 매칭 시작: {os.path.basename(temp_file_path)}")
             
-            logger.info(f"[Image Match] 처리 시작: {os.path.basename(temp_file_path)}")
-            original_image = cv2.imdecode(np.frombuffer(image_bytes, np.uint8), cv2.IMREAD_COLOR)
-            if original_image is None: return "키워드 찾기 실패 (이미지 로딩 불가)"
+            match_result = self.image_hasher.find_best_match_category(temp_file_path)
             
-            # 일반 처리를 위한 1차 리사이즈
-            image_np_proc, scale_factor = self._resize_image_for_processing(original_image)
-
-            logger.info("[Image Match] 1/3: 가장 유사한 참조 이미지를 찾습니다...")
-            match_result = self.image_rag.find_best_match(temp_file_path)
-            if not match_result: return "키워드 찾기 실패 (유사 이미지 없음)"
+            if not match_result:
+                logger.warning("pHash기반 정답 카테고리가 없습니다. . .")
+                return None
+            
             best_ref_path, _ = match_result
-
-            logger.info("[Image Match] 2/3: 질문 이미지에서 포인터를 탐지합니다...")
-            # 포인터는 처리용 이미지에서 탐지
-            pointer_box = self.mapper.find_pointer_box(image_np_proc)
-            if not pointer_box: return "키워드 찾기 실패 (포인터 탐지 불가)"
-            logger.info(f"  -> 탐지된 포인터 BBox: {pointer_box}")
-
-            logger.info("[Image Match] 3/3: 위치를 매핑하여 정답 키워드를 추출합니다...")
-            # ⭐ 핵심: 매핑 함수에는 처리용 이미지와 포인터 박스를 그대로 전달
-            # 내부적으로 매칭을 위해 한번 더 리사이즈하고 좌표를 보정함
-            keyword = self.mapper.map_pointer_to_reference(
-                image_np_proc, best_ref_path, pointer_box, scale_factor=scale_factor
-            )
-            logger.info(f"  -> 최종 추출된 키워드: '{keyword}'")
-
-            if keyword.startswith("매핑 실패"):
-                logger.warning(f"매핑 실패: {keyword}")
-            else:
-                logger.info(f"[성공] 키워드 추출 완료: '{keyword}'")
-            return keyword
+            
+            with open(best_ref_path, "rb") as f:
+                ref_image_bytes = f.read()
+                ref_image_b64 = base64.b64encode(ref_image_bytes).decode("utf-8")
+                
+            logger.info(f"정답이미지 매칭 성공: {os.path.basename(best_ref_path)}")
+            return ref_image_b64
+        
         except Exception as e:
-            logger.error(f"find_keyword_from_image 처리 중 오류 발생: {e}", exc_info=True)
-            return f"키워드 찾기 실패 (내부 오류: {str(e)})"
+            logger.error(f"정답이미지 패칭 처리 중 오류가 발생하였습니다 : {e}", exc_info=True)
+            return None
+        
         finally:
             if temp_file_path and os.path.exists(temp_file_path):
-                try: os.remove(temp_file_path)
-                except Exception as e: logger.warning(f"임시 파일 삭제 실패: {e}")
-
+                try:
+                    os.remove(temp_file_path)
+                except Exception as e:
+                    logger.warning(f"임시 파일 삭제 실패: {e}")
+                
     def get_service_status(self) -> Dict:
         return {
             "initialized": self._initialized,
