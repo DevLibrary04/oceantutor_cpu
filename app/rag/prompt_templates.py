@@ -32,7 +32,7 @@ rewrite_prompt_str = """당신은 질문 재작성 전문가입니다. 사용자
 """
 rewrite_prompt = ChatPromptTemplate.from_template(rewrite_prompt_str)
 
-# 3. 최종 검색어
+# 4. 최종 검색어
 create_final_query_prompt_str = """당신은 사용자의 의도를 파악하여 최적의 검색어를 생성하는 AI입니다.
 사용자의 원본 질문과, 이미지 분석을 통해 얻은 추가적인 키워드를 조합하여,
 우리의 내부 교재 데이터베이스를 검색하기 위한 가장 효과적인 단일 검색어를 생성해주세요.

@@ -12,9 +12,7 @@ from langchain_community.tools.tavily_search import TavilySearchResults
 
 from fastapi.concurrency import run_in_threadpool
 from typing import Dict, Any, Optional
-\
 
-# 절대 경로 임포트로 변경하여 안정성 확보
 from app.rag import config
 from app.rag.loader import load_markdown_documents
 from app.rag.rag_pipeline import build_rag_app
@@ -41,7 +39,7 @@ class RAGService:
             start_time = time.time()
             logger.info(f"{model_type} 임베딩 모델 로딩 시작: {model_name}")
             
-            # HuggingFace 캐시 디렉토리 설정
+            # HuggingFace 캐시 디렉토리 설정 (최초 한번만)
             # os.environ['HF_HOME'] = './hf_cache'
             # os.environ['TRANSFORMERS_CACHE'] = './transformers_cache'
             # os.environ['TOKENIZERS_PARALLELISM'] = 'false'
@@ -84,10 +82,7 @@ class RAGService:
         load_dotenv()
         
         try:
-            # --- [수정 1] 모델 로딩을 먼저 수행합니다 ---
-            # DB 생성에 필요한 임베딩 모델을 먼저 준비합니다.
             logger.info(f"텍스트 임베딩 모델 로딩 시작: {config.TEXT_EMBEDDING_MODEL}")
-            
             
             self.text_embedding = self._load_embedding_model_safe(
                 config.TEXT_EMBEDDING_MODEL,
@@ -97,7 +92,7 @@ class RAGService:
             if not self.text_embedding:
                 raise RuntimeError("텍스트 임베딩 모델 로딩에 실패하였습니다.")
 
-            # --- [수정 2] DB 존재 여부를 확인하고, 없으면 생성, 있으면 로드합니다 ---
+            # DB 존재 여부를 확인하고, 없으면 생성, 있으면 로드합니다 ---
             text_vectorstore = None
             if not os.path.exists(config.TEXT_DB_PATH):
                 logger.info("기존 텍스트 벡터스토어가 존재하지 않습니다. 새로 생성합니다...")
@@ -111,7 +106,7 @@ class RAGService:
                 logger.info(f"문서 로딩 완료 ({time.time() - start_time:.2f}초)")
                 logger.info(f"텍스트 문서: {len(text_docs)}개")
 
-                # 2. 벡터스토어 생성 (이 부분은 처음 한 번만 실행됩니다!)
+                # 2. 벡터스토어 생성 (이 부분은 처음 한 번만 실행됩니다)
                 start_time = time.time()
                 logger.info("텍스트 벡터스토어 생성 및 저장 중... (시간이 오래 걸릴 수 있습니다)")
                 text_vectorstore = Chroma.from_documents(
@@ -132,10 +127,7 @@ class RAGService:
                 )
                 logger.info(f"텍스트 벡터스토어 로드 완료 ({time.time() - start_time:.2f}초)")
             
-            # 이미지 벡터스토어는 이제 사용하지 않으므로 None으로 고정
-            image_vectorstore = None
-            
-            # 5. Reranker 모델 로딩
+            # Reranker 모델 로딩
             start_time = time.time()
             logger.info(f"Reranker 모델 로딩 시작: {config.RERANKER_MODEL}")
             try:
@@ -145,10 +137,11 @@ class RAGService:
                 logger.error(f"Reranker 모델 로딩 실패: {str(e)}")
                 raise
             
-            # 6. LLM 및 웹 검색 도구 초기화
+            # LLM 및 웹 검색 도구 초기화
             logger.info("LLM 및 웹 검색 도구 초기화 중...")
             start_time = time.time()
             
+            # 올라마 -> gemini
             # llm = ChatOllama(model=config.LLM_MODEL, temperature=0)
             
             google_api_key = os.getenv("GOOGLE_API_KEY")
@@ -164,7 +157,7 @@ class RAGService:
             web_search_tool = TavilySearchResults(max_results=3)
             logger.info(f"LLM 및 웹 검색 도구 초기화 완료 ({time.time() - start_time:.2f}초)")
 
-            # 8. RAG 앱 빌드
+            # RAG 앱 빌드
             logger.info(". . .RAG 파이프라인 빌드 중. . .")
             rag_config_params = {
                 "RELEVANCE_THRESHOLD": config.RELEVANCE_THRESHOLD,
@@ -199,7 +192,6 @@ class RAGService:
             print(f"--- [Text RAG Service] get_answer 호출됨. ---")
 
             def run_sync_pipeline() -> Dict[str, Any]:
-                # ⭐⭐⭐ 파이프라인에 필요한 최소한의 재료만 전달합니다. ⭐⭐⭐
                 inputs = {
                     "question": question, 
                     "uploaded_image_b64": image_b64,

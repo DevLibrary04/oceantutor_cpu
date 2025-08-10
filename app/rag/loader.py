@@ -18,13 +18,13 @@ def parse_markdown_file(file_path: str) -> Tuple[List[Document], List[Document]]
     with open(file_path, 'r', encoding='utf-8') as f:
         content = f.read()
 
-    # 이미지를 기준으로 텍스트를 나눕니다.
-    # 이렇게 하면 각 텍스트 덩어리는 최대 하나의 이미지만을 참조하게 됩니다.
+    # 이미지를 기준으로 텍스트를 나눈다.
+    # 이렇게 하면 각 텍스트 덩어리는 최대 하나의 이미지만을 참조하게 된다.
     chunks = re.split(r'(\!\[.*?\]\(.*?\))', content)
 
 
     text_docs: List[Document] = []
-    # 이전 텍스트를 임시 젖아
+    # 이전 텍스트를 임시 저장
     previous_text = ""
     
     for chunk in chunks:

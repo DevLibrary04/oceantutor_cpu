@@ -1,21 +1,17 @@
-# app/routers/rag.py (진짜 최종 완성본)
-
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from app.schemas import RAGResponse
 from typing import Optional
 import base64
 
-# 모든 필요한 서비스와 함수를 import 합니다.
 from app.services.rag_service import get_rag_service
-from app.services.image_matching_service import get_image_matching_service
-from app.ocr_service import get_ocr_reader # 범용 OCR 서비스
+from app.ocr_service import get_ocr_reader 
 
 router = APIRouter(
     prefix="/rag",
     tags=["RAG"]
 )
 
-# OCR 처리를 별도 함수로 분리하여 재사용성을 높입니다.
+# OCR 처리
 async def perform_ocr(image_bytes: bytes) -> str:
     try:
         ocr_reader = get_ocr_reader()
@@ -50,11 +46,10 @@ async def query_rag_system(question: str = Form(...), image: Optional[UploadFile
         
     print(log_message)
     
-    # 2. RAG 서비스에 질문과 이미지만 전달하면 끝!
+    # 2. RAG 서비스에 질문과 이미지만 전달
     try:
         rag_service = get_rag_service()
         
-        # ⭐⭐⭐ 모든 복잡한 로직은 rag_service가 알아서 처리합니다. ⭐⭐⭐
         result_state = await rag_service.get_answer(
             question=question, 
             image_b64=image_b64

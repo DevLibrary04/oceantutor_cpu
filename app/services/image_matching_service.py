@@ -43,7 +43,6 @@ class ImageHasher:
             for filename in files:
                 problem_path = os.path.join(root, filename)
                 self.problem_to_ref_map[problem_path] = category_ref_path
-                # self.problem_hashes[problem_path] = imagehash.phash(...)
                 try:
                     if filename.lower().endswith(('.png', '.jpg', '.jpeg')):
                         img = Image.open(problem_path)
@@ -190,7 +189,6 @@ class ObjectDetectorMapper:
         ref_gray = cv2.cvtColor(ref_resized, cv2.COLOR_BGR2GRAY)
 
         # 2. 포인터 좌표도 매칭용 이미지의 스케일에 맞게 조정
-        # `pointer_box`는 `question_image_np` 기준 좌표이므로, `q_scale`을 곱해 `q_resized` 기준 좌표로 변환
         adjusted_pointer_box = [int(coord * q_scale) for coord in pointer_box]
         
         pointer_center = (int((adjusted_pointer_box[0] + adjusted_pointer_box[2]) / 2),
@@ -208,7 +206,7 @@ class ObjectDetectorMapper:
                 transformed_center_3d = cv2.perspectiveTransform(q_center_3d, M)
                 transformed_center = tuple(map(int, transformed_center_3d[0][0]))
 
-                # 3: 변환된 좌표를 '원본' 참조 이미지 크기로 최종 스케일업
+                # 변환된 좌표를 '원본' 참조 이미지 크기로 최종 스케일업
                 original_transformed_center = (
                     int(transformed_center[0] / ref_scale),
                     int(transformed_center[1] / ref_scale)
@@ -236,8 +234,7 @@ class ObjectDetectorMapper:
             logger.error(f"매핑 처리 중 오류: {e}", exc_info=True)
             return f"매핑 실패 (내부 오류: {e})"
 
-    # --- (헬퍼 함수) ---
-
+    # 헬퍼 함수
     def _resize_question_image(self, image: np.ndarray, target_size: int = 1024) -> Tuple[np.ndarray, float]:
         """질문 이미지를 매칭용 표준 크기로 리사이즈"""
         h, w = image.shape[:2]
@@ -384,7 +381,6 @@ class ObjectDetectorMapper:
             logger.warning(f"디버그 이미지 저장 실패: {e}")
 
 
-# --- 3. ImageMatchingService (싱글턴 통합 서비스) ---
 class ImageMatchingService:
     _instance = None
     _initialized = False

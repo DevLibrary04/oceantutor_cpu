@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 DB_STORAGE_PATH = os.path.join(PROJECT_ROOT, '.db_storage')
 CACHE_DIR = os.path.join(PROJECT_ROOT, "cache") # 임시 캐시 폴더
