@@ -43,20 +43,20 @@ OceanTutor는 해기사 자격증 시험을 준비하는 수험생들을 위한 
 ## 🏗️ 시스템 아키텍처
 ```markdown
 graph TD
-    A[사용자 요청<br>(질문 텍스트 + 이미지?)] --> B{이미지 포함 여부};
+    A[사용자 요청 질문 텍스트 + 이미지?] --> B{이미지 포함 여부};
 
     B -- No --> F[2. 검색어 생성];
-    B -- Yes --> C[1A. 이미지 카테고리 분류<br>(pHash Clustering)];
-    C --> D[1B. 멀티모달 VQA<br>(Gemini)];
+    B -- Yes --> C[1A. 이미지 카테고리 분류 pHash Clustering];
+    C --> D[1B. 멀티모달 VQA Gemini];
     D --> E{VQA 키워드 추출 성공?};
 
     E -- Yes --> F;
-    F --> G[3. RAG: 텍스트 DB 검색<br>(ChromaDB)];
-    G --> H[4. 문서 품질 검수<br>(BGE Reranker)];
+    F --> G[3. RAG: 텍스트 DB 검색 ChromaDB];
+    G --> H[4. 문서 품질 검수 BGE Reranker];
     H --> I{관련 문서 찾음?};
 
-    I -- Yes --> K[6. 최종 답변 생성<br>(Gemini)];
-    I -- No --> J[5. Fallback: 웹 검색<br>(Tavily)];
+    I -- Yes --> K[6. 최종 답변 생성 Gemini];
+    I -- No --> J[5. Fallback: 웹 검색 Tavily];
     J --> K;
     E -- No --> K;
 
@@ -73,6 +73,23 @@ graph TD
     end
 
     K --> L[최종 답변];
+
+    %% Styling
+    style A fill:#d4edda,stroke:#c3e6cb,color:#155724
+    style L fill:#d4edda,stroke:#c3e6cb,color:#155724
+    
+    style C fill:#cce5ff,stroke:#b8daff,color:#004085
+    style D fill:#cce5ff,stroke:#b8daff,color:#004085
+    style F fill:#cce5ff,stroke:#b8daff,color:#004085
+    style G fill:#cce5ff,stroke:#b8daff,color:#004085
+    style H fill:#cce5ff,stroke:#b8daff,color:#004085
+    style K fill:#cce5ff,stroke:#b8daff,color:#004085
+
+    style B fill:#ffeeba,stroke:#ffdf7e,color:#856404
+    style E fill:#ffeeba,stroke:#ffdf7e,color:#856404
+    style I fill:#ffeeba,stroke:#ffdf7e,color:#856404
+
+    style J fill:#fff3cd,stroke:#ffeeba,color:#856404
 ````
 
 ---
